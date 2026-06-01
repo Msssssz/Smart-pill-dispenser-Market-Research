@@ -1,0 +1,1766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Pill Dispenser — Market Analysis</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- Mermaid.js — stakeholder flow diagrams -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+
+  <!-- D3.js + TopoJSON — world map -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'dark',
+      themeVariables: {
+        background:          '#161b22',
+        mainBkg:             '#1c2128',
+        nodeBorder:          '#30363d',
+        clusterBkg:          '#161b22',
+        edgeLabelBackground: '#1c2128',
+        lineColor:           '#6e7681',
+        fontFamily:          "-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif",
+        fontSize:            '13px',
+      },
+      flowchart: { curve: 'basis', padding: 18 },
+    });
+  </script>
+
+  <style>
+    /* ── Theme tokens ── */
+    :root {
+      --bg:           #0d1117;
+      --bg-card:      #161b22;
+      --bg-card-alt:  #1c2128;
+      --border:       #21262d;
+      --border-faint: #30363d;
+      --text-h:       #f0f6fc;
+      --text-body:    #c9d1d9;
+      --text-muted:   #8b949e;
+      --text-dim:     #6e7681;
+      --chart-grid:   #21262d;
+      --chart-tick:   #6e7681;
+      --chart-label:  #8b949e;
+    }
+    [data-theme="light"] {
+      --bg:           #f6f8fa;
+      --bg-card:      #ffffff;
+      --bg-card-alt:  #f6f8fa;
+      --border:       #d0d7de;
+      --border-faint: #e8ecef;
+      --text-h:       #1f2328;
+      --text-body:    #24292f;
+      --text-muted:   #57606a;
+      --text-dim:     #6e7781;
+      --chart-grid:   #e8ecef;
+      --chart-tick:   #6e7781;
+      --chart-label:  #57606a;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text-body);
+      padding: 32px;
+      min-height: 100vh;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    /* ── Page header ── */
+    .page-header { margin-bottom: 20px; }
+    .page-header h1 { font-size: 20px; font-weight: 600; color: var(--text-h); letter-spacing: -0.3px; }
+    .page-header .meta { font-size: 12px; color: var(--text-dim); margin-top: 6px; line-height: 1.7; }
+    /* ── Layout rows ── */
+    .rows { display: flex; flex-direction: column; gap: 12px; }
+    .row  { display: flex; gap: 12px; }
+    .col  { min-width: 0; }
+    .col-4  { flex: 4; }
+    .col-5  { flex: 5; }
+    .col-6  { flex: 6; }
+    .col-7  { flex: 7; }
+    .col-8  { flex: 8; }
+    .col-12 { flex: 12; }
+
+    /* ── Card ── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px 12px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 3px;
+      flex-shrink: 0;
+    }
+
+    .card-title { font-size: 13px; font-weight: 600; color: var(--text-h); line-height: 1.3; }
+    .card-desc  { font-size: 11px; color: var(--text-muted); margin-top: 3px; line-height: 1.55;
+                  margin-bottom: 8px; flex-shrink: 0; }
+
+    /* chart fills remaining space */
+    .chart-wrap { flex: 1; min-height: 0; position: relative; }
+
+    /* ── Badges ── */
+    .badge-row { display: flex; gap: 7px; align-items: center; flex-wrap: wrap;
+                 margin-top: 8px; flex-shrink: 0; }
+    .badge {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.4px;
+      border-radius: 3px; padding: 2px 6px;
+    }
+    .badge-data { background: rgba(88,166,255,.12); color: #58a6ff;
+                  border: 1px solid rgba(88,166,255,.3); }
+    .badge-est  { background: rgba(227,179,65,.12);  color: #e3b341;
+                  border: 1px solid rgba(227,179,65,.3); }
+    .badge-na   { background: rgba(139,148,158,.12); color: #8b949e;
+                  border: 1px solid rgba(139,148,158,.3); }
+    .badge-label { font-size: 11px; color: var(--text-dim); }
+
+    /* ── Footnote ── */
+    .fn { font-size: 11px; color: var(--text-dim); margin-top: 7px; line-height: 1.65; flex-shrink: 0; }
+
+    /* ── Nav bar ── */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 0 20px;
+      height: 40px;
+      margin: -32px -32px 20px -32px;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .nav-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-h);
+      margin-right: 12px;
+      white-space: nowrap;
+    }
+    .nav-divider {
+      width: 1px;
+      height: 16px;
+      background: var(--border);
+      margin: 0 8px;
+    }
+    .nav a {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 4px 10px;
+      border-radius: 4px;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s;
+    }
+    .nav a:hover { background: var(--border); color: var(--text-h); }
+    .nav-spacer  { flex: 1; }
+    #theme-toggle {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 4px;
+      padding: 3px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    #theme-toggle:hover { background: var(--border); color: var(--text-h); }
+
+    /* offset scroll target so sticky nav doesn't cover it */
+    .section { scroll-margin-top: 48px; }
+
+    /* ── Pie stats grid ── */
+    .pie-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 10px;
+                 margin-bottom: 8px; flex-shrink: 0; }
+    .pie-stat  { display: flex; align-items: center; gap: 7px; }
+    .pie-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+    .pie-stat-label { font-size: 10px; color: var(--text-dim); }
+    .pie-stat-value { font-size: 13px; font-weight: 600; color: var(--text-h); }
+
+    /* ── Stakeholder Flow Section ── */
+    .flow-section { margin-top: 24px; }
+    .flow-section-hdr { margin-bottom: 14px; }
+    .flow-section-hdr h2 { font-size: 15px; font-weight: 600; color: var(--text-h); margin-bottom: 4px; }
+    .flow-section-hdr p  { font-size: 11px; color: var(--text-muted); line-height: 1.7; }
+
+    .card-flow { height: auto !important; overflow: visible !important; }
+    .card-flow .mermaid { margin-top: 6px; text-align: center; }
+    .card-flow .mermaid svg { max-width: 100%; height: auto; display: inline-block; }
+
+    .legend-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .lchip {
+      font-size: 10px; padding: 2px 8px; border-radius: 3px;
+      font-weight: 500; letter-spacing: 0.2px;
+    }
+    .lchip-product  { background: rgba(13,65,157,.35);  border: 1px solid #388bfd; color: #cae8ff; }
+    .lchip-buyer    { background: rgba(13,68,41,.35);   border: 1px solid #26a641; color: #aff5b4; }
+    .lchip-user     { background: rgba(61,45,0,.35);    border: 1px solid #d29922; color: #f0e280; }
+    .lchip-provider { background: rgba(45,31,110,.35);  border: 1px solid #8b6cda; color: #d2a8ff; }
+    .lchip-payer    { background: rgba(6,48,49,.35);    border: 1px solid #22d3ee; color: #67e8f9; }
+    .lchip-regul    { background: rgba(45,18,18,.35);   border: 1px solid #f47067; color: #ffa198; }
+    .lchip-compete  { background: rgba(61,15,15,.35);   border: 1px solid #ff7b72; color: #ffa198; }
+    .lchip-gray     { background: rgba(28,33,40,.35);   border: 1px solid #484f58; color: #8b949e; }
+    .lchip-market   { background: rgba(13,45,94,.35);   border: 1px solid #58a6ff; color: #79c0ff; }
+    .lchip-gap      { background: rgba(61,34,0,.35);    border: 1px solid #e3b341; color: #ffd680; }
+    .lchip-unlock   { background: rgba(10,61,26,.45);   border: 1px solid #3fb950; color: #56d364; }
+    /* Category-numbered chips — map 1-to-1 to stakeholders.md sections */
+    .lchip-cat1 { background: rgba(61,45,0,.4);    border: 1px solid #d29922; color: #f0e280; }
+    .lchip-cat2 { background: rgba(13,68,41,.4);   border: 1px solid #26a641; color: #aff5b4; }
+    .lchip-cat3 { background: rgba(45,31,110,.4);  border: 1px solid #8b6cda; color: #d2a8ff; }
+    .lchip-cat4 { background: rgba(13,45,94,.4);   border: 1px solid #388bfd; color: #79c0ff; }
+    .lchip-cat5 { background: rgba(45,18,18,.4);   border: 1px solid #f47067; color: #ffa198; }
+    .lchip-pain { background: rgba(28,33,40,.4);   border: 1px dashed #484f58; color: #6e7681; }
+
+    /* ── World map ── */
+    .map-tooltip {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 11px;
+      color: var(--text-body);
+      max-width: 240px;
+      z-index: 20;
+      line-height: 1.6;
+      white-space: nowrap;
+      box-shadow: 0 4px 14px rgba(0,0,0,.30);
+      pointer-events: none;
+      transition: opacity 0.1s;
+    }
+    .map-toggle { display: flex; gap: 3px; }
+    .map-btn {
+      font-size: 11px; font-family: inherit; cursor: pointer;
+      padding: 3px 12px; border-radius: 4px;
+      border: 1px solid var(--border); background: none;
+      color: var(--text-muted); transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .map-btn:hover { background: var(--border); color: var(--text-h); }
+    .map-btn-active { background: var(--border-faint); color: var(--text-h); border-color: var(--border); font-weight: 600; }
+    .map-legend-swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+
+    /* ── Section dividers ── */
+    .section-divider {
+      padding: 32px 0 20px;
+      border-top: 1px solid var(--border);
+      margin-top: 24px;
+    }
+    .section-divider-label {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-h);
+      letter-spacing: -0.3px;
+      margin-bottom: 5px;
+    }
+    .section-divider-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <span class="nav-title">Smart Pill Dispenser</span>
+  <div class="nav-divider"></div>
+  <a href="#section-market-sizing">Market Sizing</a>
+  <a href="#section-demand">Demand Analysis</a>
+  <a href="#section-supply">Supply Analysis</a>
+  <div class="nav-spacer"></div>
+  <button id="theme-toggle" onclick="toggleTheme()">☀ Light</button>
+</nav>
+
+<div class="page-header">
+  <h1>Smart Pill Dispenser — Market Analysis</h1>
+  <div class="meta">
+    Market Sizing · Demand Analysis · Supply Analysis &nbsp;|&nbsp;
+    Primary market: US &nbsp;|&nbsp; 2025–2030<br>
+    Sources: VMR <em>Global Smart Pill Dispenser Market 2026–2033</em> ·
+    360iResearch <em>Smart Pill Boxes &amp; Bottles 2026–2032</em> ·
+    MarketsandMarkets <em>Telehealth &amp; Telemedicine — Global Forecast to 2030</em> (Feb 2025, Tables 126–129, 354) ·
+    Internal B2B analysis<br>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     01 · MARKET SIZING
+════════════════════════════════════════════════════ -->
+<div id="section-market-sizing" class="section-divider" style="border-top:none;margin-top:0;padding-top:8px">
+  <div class="section-divider-label">Market Sizing</div>
+  <div class="section-divider-sub">How large is the global and US market opportunity?</div>
+</div>
+
+<div class="rows">
+
+  <!-- Row 1+2: Global Share + NA Breakdown — side by side ─── height 480 px -->
+  <div class="row section" style="height:480px">
+    <div id="global-share" class="col col-6">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Global Telehealth Market Share — by Continent (2022 · 2025 · 2030)</span>
+        </div>
+        <div class="card-desc">North America's dominant share is gradually declining as Asia Pacific accelerates — AP grows from 18.4% in 2022 to 22.6% by 2030, nearly matching Europe, driven by the highest regional CAGR of 14.4%. 2030 total market: $180.9B.</div>
+        <div class="chart-wrap"><canvas id="globalShareChart"></canvas></div>
+        <div class="badge-row">
+          <span class="badge badge-data">DATA</span>
+          <span class="badge-label">MarketsandMarkets Table 126 (Feb 2025) · Global market 2022 $74.0B → 2025 $106.0B → 2030 $180.9B · CAGR 11.5% global</span>
+        </div>
+      </div>
+    </div>
+    <div id="na-breakdown" class="col col-6">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">North America Telehealth Market Share — US vs Canada (2022 · 2025 · 2030)</span>
+        </div>
+        <div class="card-desc">Within North America, the US holds a commanding and growing share — 95.1% in 2022, rising to 95.9% by 2030 — as its CAGR (10.4%) outpaces Canada (7.9%). Under MnM's regional taxonomy, Mexico is classified under Latin America; US + Canada account for 100% of the reported NA total.</div>
+        <div class="chart-wrap"><canvas id="naShareChart"></canvas></div>
+        <div class="badge-row">
+          <span class="badge badge-data">DATA</span>
+          <span class="badge-label">MnM Table 126 (NA totals) · Table 127 (US &amp; Canada) · Feb 2025 · NA total 2022 $38.8B → 2025 $53.9B → 2030 $87.2B</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Row 3: Market Sizing Layers — US + 5-country comparison -->
+  <div id="market-sizing" class="row section" style="height:500px">
+    <div class="col col-4">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">US Market Sizing — Telehealth Segments (2025 · 2030 Proj.)</span>
+        </div>
+        <div class="card-desc">Automatic Pill Dispenser is SAM₂ within the US telehealth stack. 2025 SAM₂ = $423.5M inside a $51.4B TAM. Current penetration of 0.82% is the lowest among all peer countries — signals underpenetration, not saturation.</div>
+        <div class="chart-wrap"><canvas id="cmlUSChart"></canvas></div>
+        <div class="badge-row">
+          <span class="badge badge-data">DATA</span>
+          <span class="badge-label">MnM Telehealth &amp; Telemedicine Tables 126, 142, 156, 185, 199, 298, 326 (Feb 2025) · VMR Global Smart Pill Dispenser 2026–2033 · SAM₂ = Automatic Pill Dispenser segment</span>
+        </div>
+      </div>
+    </div>
+    <div class="col col-8">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">5-Country Comparison — Telehealth Segments (2025 vs 2030 Proj.)</span>
+        </div>
+        <div class="card-desc">Canada, Germany, UK, Japan, and Australia SAM₂ values ($54.9M–$81.6M) each approximate a single US metro market. Combined four-country SAM₂ growth by 2030 ($134.7M) is roughly half of US SAM₂ growth alone ($244M). Australia SAM₂ is unavailable (VMR bundles in Rest of APAC).</div>
+        <div class="chart-wrap"><canvas id="cmlIntlChart"></canvas></div>
+        <div class="badge-row">
+          <span class="badge badge-data">DATA</span>
+          <span class="badge-label">MnM Tables 126–129, 298, 326 (Feb 2025) · ²Australia = VMR Rest of APAC proxy; SAM₂ shown $0 · '25 and '30 bars per country share same x-axis group</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /.rows -->
+
+<!-- ═══════════════════════════════════════════════════════════════
+     02 · DEMAND ANALYSIS
+════════════════════════════════════════════════════════════════ -->
+<div id="section-demand" class="section-divider">
+  <div class="section-divider-label">Demand Analysis</div>
+  <div class="section-divider-sub">Why does the gap exist and why is the US the only market with a reimbursement pathway to close it?</div>
+</div>
+
+<div id="market-flows" class="section flow-section">
+
+  <div class="flow-section-hdr">
+    <h2>Stakeholder Flows — Current Market Gaps</h2>
+    <p><strong>Left:</strong> today's B2B institutional market — dispensers exist, adherence data is captured, but no device syncs it to the EHR, so RTM billing is blocked at every facility running today's hardware.
+       <strong>Right:</strong> the B2C consumer market — no licensed clinical provider in the loop means RTM billing is structurally inaccessible, regardless of product quality.</p>
+  </div>
+
+  <!-- Row 1: Current B2B (left) + Current B2C (right) -->
+  <div class="row" style="align-items:flex-start">
+
+    <!-- ── Current B2B ── -->
+    <div class="col col-6">
+      <div class="card card-flow" style="border-color:rgba(244,112,103,.3)">
+        <div class="card-header">
+          <span class="card-title" style="color:#f47067">Current B2B Market — The Broken Chain</span>
+        </div>
+        <div class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': {'edgeLabelBackground': '#1c2128', 'lineColor': '#484f58', 'background': '#161b22', 'mainBkg': '#1c2128'}}}%%
+flowchart LR
+    classDef buyer    fill:#0d4429,stroke:#26a641,color:#aff5b4,stroke-width:2px
+    classDef cat4     fill:#0d2d5e,stroke:#388bfd,color:#79c0ff,stroke-width:2px
+    classDef provider fill:#2d1f6e,stroke:#8b6cda,color:#d2a8ff,stroke-width:2px
+    classDef user     fill:#3d2d00,stroke:#d29922,color:#f0e280,stroke-width:2px
+    classDef nopay    fill:#3d0f0f,stroke:#ff7b72,color:#ffa198,stroke-width:2px
+    classDef payer    fill:#063031,stroke:#22d3ee,color:#67e8f9,stroke-width:2px
+    classDef regul    fill:#2d1212,stroke:#f47067,color:#ffa198,stroke-width:1px
+
+    subgraph SG_OPR[" "]
+      direction TB
+      OPR["🏢 Operator\nNursing Home · ALF\nHome Care"]:::buyer
+      SSA["🏛️ State Survey Agencies\nAnnual medication audit"]:::regul
+    end
+
+    style SG_OPR fill:none,stroke:none
+
+    PHARM["💊 Pharmacy"]:::buyer
+    CURR["📱 Spencer / TabSafe\ntoday's B2B dispenser"]:::cat4
+    NURSE["👩‍⚕️ Clinical Staff\nRN / CNA"]:::provider
+    PAT["👤 Patient"]:::user
+    FAM["👨‍👩 Family / Caregiver\nAlerts &amp; Visibility"]:::user
+    SILO["🗄 Adherence Data\ntrapped in device silo\n⚠ no EHR integration"]:::nopay
+    EHR["🏥 PointClickCare\n~60% US SNFs"]:::provider
+    CMS["💰 CMS · RTM + CCM\n⚠ potential — not yet unlocked"]:::payer
+    PHY["🩺 Physician\nprescribes medication"]:::provider
+
+    PHARM  -->|"medication\nsupply"| OPR
+    OPR    -->|"deploys"| CURR
+    OPR    -->|"employs"| NURSE
+    OPR    -.->|"subject to\nannual audit"| SSA
+    CURR   -->|"dispenses"| PAT
+    CURR   -->|"captures\nadherence data"| SILO
+    CURR   -.->|"basic alerts"| FAM
+    NURSE  -->|"manual MAR\nentry"| EHR
+    SILO   -.->|"❌ no EHR sync"| EHR
+    EHR    -.->|"insufficient data\n❌ RTM blocked"| CMS
+    PHY    -->|"prescribes"| PAT
+    PHY    -.->|"zero adherence\nvisibility post-visit"| SILO
+    FAM    -.->|"reminders /\nactions"| PAT
+        </div>
+        <div class="badge-row" style="margin-top:8px">
+          <span class="badge badge-est">GAP</span>
+          <span class="badge-label">Adherence data captured but siloed — EHR sync is the single missing link</span>
+        </div>
+        <div class="legend-row" style="margin-top:8px">
+          <span class="lchip lchip-buyer">Operator / Buyer</span>
+          <span class="lchip lchip-cat4">Competitor Device</span>
+          <span class="lchip lchip-user">Patient / Caregiver</span>
+          <span class="lchip lchip-provider">Clinical / EHR</span>
+          <span class="lchip lchip-compete">Gap / Blocked</span>
+          <span class="lchip lchip-payer">CMS / Payer</span>
+          <span class="lchip lchip-regul">Regulatory</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Current B2C ── -->
+    <div class="col col-6">
+      <div class="card card-flow" style="border-color:rgba(227,179,65,.3)">
+        <div class="card-header">
+          <span class="card-title" style="color:#e3b341">Current B2C Market — No Clinical Pathway</span>
+        </div>
+        <div class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': {'edgeLabelBackground': '#1c2128', 'lineColor': '#484f58', 'background': '#161b22', 'mainBkg': '#1c2128'}}}%%
+flowchart LR
+    classDef user     fill:#3d2d00,stroke:#d29922,color:#f0e280,stroke-width:2px
+    classDef cat4     fill:#0d2d5e,stroke:#388bfd,color:#79c0ff,stroke-width:2px
+    classDef provider fill:#2d1f6e,stroke:#8b6cda,color:#d2a8ff,stroke-width:2px
+    classDef nopay    fill:#3d0f0f,stroke:#ff7b72,color:#ffa198,stroke-width:2px
+    classDef buyer    fill:#0d4429,stroke:#26a641,color:#aff5b4,stroke-width:2px
+
+    FAM["👨‍👩 Family / Caregiver\nbuyer &amp; monitor"]:::user
+    VEND["📦 Consumer Dispenser\nMedMinder · Hero · AdhereTech"]:::cat4
+    APP["📱 Consumer App\nalerts &amp; reports"]:::cat4
+    PAT["👤 Patient"]:::user
+    PHY["🩺 Physician\nprescribes medication"]:::provider
+    PHARM["💊 Pharmacy\nmedication supply"]:::buyer
+    CMS["💰 CMS · RTM + CCM\n❌ structurally inaccessible\nno provider in loop"]:::nopay
+
+    FAM   -->|"purchases"| VEND
+    VEND  -->|"dispenses"| PAT
+    VEND  -->|"adherence\ndata"| APP
+    APP   -->|"missed dose\nalerts"| FAM
+    PHARM -->|"medication\nsupply"| PAT
+    VEND  -.->|"refill\nreminders"| PHARM
+    PHY   -->|"prescribes"| PAT
+    PHY   -.->|"zero adherence\nvisibility post-visit"| CMS
+    APP   -.->|"data never enters\nclinical workflow"| CMS
+    FAM   -.->|"reminders /\nactions"| PAT
+        </div>
+        <div class="badge-row" style="margin-top:8px">
+          <span class="badge badge-na">STRUCTURAL</span>
+          <span class="badge-label">No product change unlocks RTM billing without a licensed clinical provider in the loop</span>
+        </div>
+        <div class="legend-row" style="margin-top:8px">
+          <span class="lchip lchip-buyer">Operator / Buyer</span>
+          <span class="lchip lchip-cat4">Competitor Device</span>
+          <span class="lchip lchip-user">Patient / Caregiver</span>
+          <span class="lchip lchip-provider">Clinical / EHR</span>
+          <span class="lchip lchip-compete">Gap / Blocked</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.row current -->
+
+  <!-- Sub-title: Ideal Stakeholder Flows -->
+  <div class="flow-section-hdr" style="margin-top:24px">
+    <h2>Ideal Stakeholder Flows — Our Solution</h2>
+    <p>The full B2B institutional deployment with our platform filling both gaps — EHR sync activates the clinical review step and unlocks the downstream reimbursement chain.</p>
+  </div>
+
+  <!-- Row 2: Full B2B stakeholder view — gap highlights -->
+  <div class="row" style="margin-top:12px">
+    <div class="col col-12">
+      <div class="card card-flow" style="border-color:rgba(63,185,80,.35)">
+        <div class="card-header">
+          <span class="card-title" style="color:#3fb950">B2B — Institutional Deployment · Full Stakeholder View</span>
+        </div>
+        <div class="card-desc">
+          The complete B2B institutional stakeholder ecosystem, with our Cloud Adherence Platform (<strong style="color:#56d364">★ green</strong>) as the single new node that fills both gaps. <strong>★ Green links</strong> show the two connections our platform specifically adds: EHR sync (PLT → EHR) activates the clinical review step, and RTM billing (CMS → OPR) closes the revenue loop — making the device net-positive at every operator running today's hardware.
+        </div>
+        <div class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': {'edgeLabelBackground': '#1c2128', 'lineColor': '#484f58', 'background': '#161b22', 'mainBkg': '#1c2128'}}}%%
+flowchart LR
+    classDef product  fill:#0d419d,stroke:#388bfd,color:#cae8ff,stroke-width:2px
+    classDef buyer    fill:#0d4429,stroke:#26a641,color:#aff5b4,stroke-width:2px
+    classDef provider fill:#2d1f6e,stroke:#8b6cda,color:#d2a8ff,stroke-width:2px
+    classDef payer    fill:#063031,stroke:#22d3ee,color:#67e8f9,stroke-width:2px
+    classDef user     fill:#3d2d00,stroke:#d29922,color:#f0e280,stroke-width:2px
+    classDef unlock   fill:#0a3d1a,stroke:#3fb950,color:#56d364,stroke-width:2px
+
+    OPR["🏢 Institutional Operator\nNursing Home · ALF · Home Care"]:::buyer
+    PAT["👤 Elderly Patient\nChronic Illness / 65+"]:::user
+    DEV["💊 Smart Pill Dispenser\n— Our Product —"]:::product
+    PLT["☁️ Cloud Adherence Platform\nSaaS · Fleet Dashboard\n★ bridges both gaps"]:::unlock
+    EHR["🏥 EHR System\nPointClickCare · ~60% US SNFs"]:::provider
+    CLS["👩‍⚕️ Licensed Clinical Staff"]:::provider
+    CMS["💰 CMS / Payer\nRTM + CCM Billing"]:::payer
+    FAM["👨‍👩 Family / Caregiver\nAlerts &amp; Visibility"]:::user
+    PHY["🩺 Physician / Provider\nClinical Insights"]:::provider
+
+    OPR -->|"fleet procurement\n&amp; deployment"| DEV
+    PAT -->|"medication intake"| DEV
+    DEV -->|"adherence data\ntimestamped"| PLT
+    PLT -->|"★ EHR Integration\nbridges current B2B gap"| EHR
+    PLT -->|"missed dose\nalerts"| FAM
+    PLT -->|"clinical\ninsights"| PHY
+    EHR -->|"dashboard\nreview"| CLS
+    OPR -.->|"employs"| CLS
+    CLS -->|"RTM CPT 98980/98981\nCCM CPT 99490"| CMS
+    CMS -->|"★ bridges current B2C\nRTM Billing barrier"| OPR
+    PHY -->|"prescribes"| PAT
+    FAM -.->|"reminders /\nactions"| PAT
+    linkStyle 3 stroke:#3fb950,color:#3fb950
+    linkStyle 9 stroke:#3fb950,color:#3fb950
+        </div>
+        <div class="badge-row" style="margin-top:8px">
+          <span class="badge badge-data">★ GAP 1</span>
+          <span class="badge-label">EHR sync — no current B2B dispenser syncs adherence data to PointClickCare</span>
+          <span class="badge badge-data">★ GAP 2</span>
+          <span class="badge-label">RTM billing loop — ~$112/pt/mo uncaptured at every facility running today's hardware</span>
+        </div>
+        <div class="legend-row" style="margin-top:8px">
+          <span class="lchip lchip-product">Our Product</span>
+          <span class="lchip lchip-unlock">★ Our Platform</span>
+          <span class="lchip lchip-buyer">Operator / Buyer</span>
+          <span class="lchip lchip-user">Patient / Caregiver</span>
+          <span class="lchip lchip-provider">Clinical / EHR</span>
+          <span class="lchip lchip-payer">CMS / Payer</span>
+        </div>
+      </div>
+    </div>
+  </div><!-- /.row full-deployment -->
+
+  <!-- Reimbursement pathway title + table -->
+  <div class="flow-section-hdr" style="margin-top:24px">
+    <h2>Reimbursement Pathway</h2>
+  </div>
+  <div class="row" style="margin-top:12px">
+    <div class="col col-12">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Reimbursement Pathway — US vs Key Markets</span>
+        </div>
+        <div class="card-desc">The US is the only market with confirmed, quantified billing codes that let institutional operators recover device adoption cost through insurance. RTM codes 98980/98981 cover therapeutic monitoring management (non-physiological — potentially applicable to medication adherence). CCM codes 99490/99487 cover chronic care management including medication reconciliation.</div>
+        <div style="overflow-x:auto;margin-top:6px">
+          <table style="width:100%;border-collapse:collapse;font-size:11px;color:var(--text-body)">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border)">
+                <th style="text-align:left;padding:7px 10px;font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;background:var(--bg-card-alt);width:15%"></th>
+                <th style="text-align:left;padding:7px 10px;font-size:11px;font-weight:700;color:#3fb950;background:rgba(63,185,80,.08);border-left:2px solid rgba(63,185,80,.4);width:14%">🇺🇸 United States</th>
+                <th style="text-align:left;padding:7px 10px;font-size:11px;font-weight:600;color:var(--text-h);background:var(--bg-card-alt);width:14%">🇨🇦 Canada</th>
+                <th style="text-align:left;padding:7px 10px;font-size:11px;font-weight:600;color:var(--text-h);background:var(--bg-card-alt);width:14%">🇩🇪 Germany</th>
+                <th style="text-align:left;padding:7px 10px;font-size:11px;font-weight:600;color:var(--text-h);background:var(--bg-card-alt);width:14%">🇬🇧 United Kingdom</th>
+                <th style="text-align:left;padding:7px 10px;font-size:11px;font-weight:600;color:var(--text-muted);background:var(--bg-card-alt);width:14%">🇯🇵 Japan</th>
+                <th style="text-align:left;padding:7px 10px;font-size:11px;font-weight:600;color:var(--text-muted);background:var(--bg-card-alt);width:14%">🇦🇺 Australia</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border-faint)">
+                <td style="padding:7px 10px;font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;background:var(--bg-card-alt)">Payer system</td>
+                <td style="padding:7px 10px;background:rgba(63,185,80,.05);border-left:2px solid rgba(63,185,80,.4)">Medicare + private insurance</td>
+                <td style="padding:7px 10px">Universal provincial coverage</td>
+                <td style="padding:7px 10px">Statutory health insurance (GKV)</td>
+                <td style="padding:7px 10px">National Health Service (NHS)</td>
+                <td style="padding:7px 10px;color:var(--text-dim)">—</td>
+                <td style="padding:7px 10px;color:var(--text-dim)">—</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border-faint)">
+                <td style="padding:7px 10px;font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;background:var(--bg-card-alt)">Billing pathway</td>
+                <td style="padding:7px 10px;background:rgba(63,185,80,.05);border-left:2px solid rgba(63,185,80,.4)">RTM (98980 / 98981) confirmed; CCM (99490 / 99487) confirmed</td>
+                <td style="padding:7px 10px;color:var(--text-dim)">—</td>
+                <td style="padding:7px 10px">DiGA register — digital health apps reimbursed; telemonitoring pathway in development</td>
+                <td style="padding:7px 10px">NHS promoting remote patient monitoring and telehealth expansion</td>
+                <td style="padding:7px 10px;color:var(--text-dim)">—</td>
+                <td style="padding:7px 10px;color:var(--text-dim)">—</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border-faint)">
+                <td style="padding:7px 10px;font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;background:var(--bg-card-alt)">Confirmed rates</td>
+                <td style="padding:7px 10px;background:rgba(63,185,80,.05);border-left:2px solid rgba(63,185,80,.4)">RTM 98980: $61.57/mo · RTM 98981: $47.16/mo · CCM 99487: $131.97/mo</td>
+                <td style="padding:7px 10px;color:var(--text-dim)">—</td>
+                <td style="padding:7px 10px;color:var(--text-dim)">—</td>
+                <td style="padding:7px 10px;color:var(--text-dim)">—</td>
+                <td style="padding:7px 10px;color:var(--text-dim)">—</td>
+                <td style="padding:7px 10px;color:var(--text-dim)">—</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border-faint)">
+                <td style="padding:7px 10px;font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;background:var(--bg-card-alt)">Adherence support</td>
+                <td style="padding:7px 10px;background:rgba(63,185,80,.05);border-left:2px solid rgba(63,185,80,.4)">Medicare + private insurance "increasingly support medication adherence technologies"</td>
+                <td style="padding:7px 10px">Smart pill dispensers "used in elderly care programs" — no billing pathway</td>
+                <td style="padding:7px 10px;color:var(--text-dim)">—</td>
+                <td style="padding:7px 10px">NHS home care support for elderly and chronic disease patients — no billing pathway</td>
+                <td style="padding:7px 10px;color:var(--text-dim)">—</td>
+                <td style="padding:7px 10px">"High digital healthcare maturity and strong adoption of connected medical devices" — no pathway</td>
+              </tr>
+              <tr>
+                <td style="padding:7px 10px;font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;background:var(--bg-card-alt)">Maturity signal</td>
+                <td style="padding:7px 10px;background:rgba(63,185,80,.05);border-left:2px solid rgba(63,185,80,.4)"><span style="background:rgba(63,185,80,.18);color:#3fb950;border:1px solid rgba(63,185,80,.4);border-radius:3px;padding:2px 8px;font-size:10px;font-weight:600">Quantified · Active</span></td>
+                <td style="padding:7px 10px"><span style="background:rgba(227,179,65,.15);color:#e3b341;border:1px solid rgba(227,179,65,.35);border-radius:3px;padding:2px 8px;font-size:10px;font-weight:600">Policy intent only</span></td>
+                <td style="padding:7px 10px"><span style="background:rgba(227,179,65,.15);color:#e3b341;border:1px solid rgba(227,179,65,.35);border-radius:3px;padding:2px 8px;font-size:10px;font-weight:600">Pathway exists · SW only</span></td>
+                <td style="padding:7px 10px"><span style="background:rgba(227,179,65,.15);color:#e3b341;border:1px solid rgba(227,179,65,.35);border-radius:3px;padding:2px 8px;font-size:10px;font-weight:600">Policy intent only</span></td>
+                <td style="padding:7px 10px"><span style="background:rgba(139,148,158,.15);color:#8b949e;border:1px solid rgba(139,148,158,.3);border-radius:3px;padding:2px 8px;font-size:10px;font-weight:600">No data</span></td>
+                <td style="padding:7px 10px"><span style="background:rgba(139,148,158,.15);color:#8b949e;border:1px solid rgba(139,148,158,.3);border-radius:3px;padding:2px 8px;font-size:10px;font-weight:600">No data</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="badge-row" style="margin-top:8px">
+          <span class="badge badge-data">DATA</span>
+          <span class="badge-label">MnM Telehealth & Telemedicine Global Forecast to 2030 — CPT Codes &amp; Reimbursement Analysis (Feb 2025) · VMR Global Smart Pill Dispenser Market 2026–2033</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+</div><!-- /#market-flows -->
+
+<!-- ═══════════════════════════════════════════════════════════════
+     03 · SUPPLY ANALYSIS
+════════════════════════════════════════════════════════════════ -->
+<div id="section-supply" class="section-divider">
+  <div class="section-divider-label">Supply Analysis</div>
+  <div class="section-divider-sub">Who is already competing and where is the open gap?</div>
+</div>
+
+<div id="market-opportunity" class="section flow-section">
+
+  <div class="flow-section-hdr">
+    <h2>The Case for US B2B Institutional — Supply-Side Evidence</h2>
+    <p>The institutional dispensing model is proven at scale globally. North America has no equivalent — only hardware players, no platform with EHR integration. The capability maps below show every hardware player worldwide and US-only: EHR integration is absent across all 19 US players, present only in Evondos globally.</p>
+  </div>
+
+  <!-- 1+2: Regional Footprint (L, 1/3) + World Map (R, 2/3) — combined row, height 540 -->
+  <div class="row section" style="height:540px">
+
+    <!-- Left col: Proof of Concept chart (1/3) -->
+    <div class="col col-4">
+      <div class="card" style="height:100%">
+        <div class="card-header">
+          <span class="card-title">Player Distribution by Continent — B2B Competition Established, EHR Gap Confirmed</span>
+        </div>
+        <div class="card-desc">Europe has exactly one full-stack B2B institutional platform: Evondos (HW + Platform + Service + EHR-equivalent workflow integration), headquartered in Finland and expanding across EU. North America has 5 B2B institutional hardware players but zero with a platform layer. The commercial model is proven at scale — the North American equivalent does not yet exist.</div>
+        <div class="chart-wrap"><canvas id="regionalFootprintMergedChart"></canvas></div>
+        <div class="badge-row">
+          <span class="badge badge-data">DATA</span>
+          <span class="badge-label">VMR Global Smart Pill Dispenser Market 2026–2033 · 2026-05-29</span>
+          <span class="badge badge-est">EST</span>
+          <span class="badge-label">Classification consistent with Chart 3 market types · one player may appear in multiple continents · EHR layer = Evondos only (Nordic EHR-equivalent integration)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right col: World Map (2/3) -->
+    <div class="col col-8">
+      <div class="card" style="height:100%">
+        <div class="card-header" style="justify-content:space-between;align-items:center">
+          <span class="card-title" id="map-title">Global Reach of the B2B Institutional Model — Nordic Proven, North America Open</span>
+          <div class="map-toggle">
+            <button id="btn-b2b" class="map-btn map-btn-active">B2B Institutional</button>
+            <button id="btn-b2c" class="map-btn">B2C Consumer</button>
+          </div>
+        </div>
+        <div class="card-desc" id="map-desc">North America and EU Nordic are both VERY HIGH intensity — but for different reasons. Nordic is locked by Evondos after a decade of platform, service, and EHR integration. North America has 17 B2B-involved players, the same count as its B2C market, but none has built a platform or EHR layer. Same intensity, very different maturity. That gap is the opening.</div>
+        <div id="world-map-svg" class="chart-wrap" style="position:relative"></div>
+        <div class="badge-row" style="margin-top:6px;flex-wrap:wrap;gap:6px">
+          <span class="badge badge-data">DATA</span>
+          <span class="badge-label">footprint.md — 24 companies · 2026-05-23 · intensity = player count + platform maturity per region</span>
+          <span style="display:inline-flex;gap:5px;align-items:center;flex-wrap:wrap;margin-left:4px">
+            <span style="font-size:10px;color:var(--text-dim)">Intensity →</span>
+            <span style="display:inline-flex;align-items:center;gap:3px"><span class="map-legend-swatch" style="background:rgba(63,185,80,.30)"></span><span class="badge-label">Very Low</span></span>
+            <span style="display:inline-flex;align-items:center;gap:3px"><span class="map-legend-swatch" style="background:rgba(63,185,80,.55)"></span><span class="badge-label">Low</span></span>
+            <span style="display:inline-flex;align-items:center;gap:3px"><span class="map-legend-swatch" style="background:rgba(227,179,65,.60)"></span><span class="badge-label">Medium</span></span>
+            <span style="display:inline-flex;align-items:center;gap:3px"><span class="map-legend-swatch" style="background:rgba(255,123,114,.65)"></span><span class="badge-label">High</span></span>
+            <span style="display:inline-flex;align-items:center;gap:3px"><span class="map-legend-swatch" style="background:rgba(255,123,114,.90)"></span><span class="badge-label">Very High</span></span>
+            <span style="width:1px;height:12px;background:var(--border);margin:0 2px"></span>
+            <span id="legend-marker" style="display:inline-flex;align-items:center;gap:3px">
+              <span style="width:9px;height:9px;border-radius:50%;background:#3fb950;border:1.5px solid #56d364;display:inline-block;flex-shrink:0"></span>
+              <span class="badge-label">Company HQ</span>
+            </span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 3: Capability Gap — Global, 28 players, height 540 -->
+  <div class="row section" style="height:540px;margin-top:12px">
+    <div class="col col-12">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Global Player Capability Map — All 28 Hardware Players · EHR Integration Present in 1 of 28</span>
+        </div>
+        <div class="card-desc">Every hardware player worldwide scored across 5 capability layers. EHR Integration (green) is present in exactly one player globally — Evondos. Sorted by capability depth. Company label colour shows market orientation.</div>
+        <div class="chart-wrap"><canvas id="capabilityGapChart"></canvas></div>
+        <div class="badge-row" style="flex-wrap:wrap;gap:6px">
+          <span class="badge badge-data">DATA</span>
+          <span class="badge-label">VMR + 360iResearch + footprint.md + battle cards · 2026-05-23</span>
+          <span class="badge badge-est">EST</span>
+          <span class="badge-label">Evondos EHR = Nordic municipal workflow integration, not PointClickCare · Spencer, EllieGrid, iRx Reminder, Addinex capabilities estimated from public sources</span>
+          <span style="display:inline-flex;gap:6px;align-items:center;margin-left:4px">
+            <span style="font-size:10px;color:var(--text-dim)">Label colour →</span>
+            <span style="font-size:10px;font-weight:700;color:#388bfd">B2B</span>
+            <span style="font-size:10px;font-weight:700;color:#22d3ee">Both</span>
+            <span style="font-size:10px;font-weight:700;color:#e3b341">B2C</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4: Capability Gap — US-only, 19 players, height 500 -->
+  <div class="row section" style="height:500px;margin-top:12px">
+    <div class="col col-12">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">US Players Only — EHR Integration Absent Across All 19</span>
+        </div>
+        <div class="card-desc">Filtered to 19 US-based hardware players. No US company has EHR integration regardless of B2B or B2C orientation — the gap is structural, not a single player's oversight.</div>
+        <div class="chart-wrap"><canvas id="capabilityGapUSChart"></canvas></div>
+        <div class="badge-row" style="flex-wrap:wrap;gap:6px">
+          <span class="badge badge-data">DATA</span>
+          <span class="badge-label">VMR + 360iResearch + footprint.md + battle cards · 2026-05-23 · US-headquartered players only</span>
+          <span style="display:inline-flex;gap:6px;align-items:center;margin-left:4px">
+            <span style="font-size:10px;color:var(--text-dim)">Label colour →</span>
+            <span style="font-size:10px;font-weight:700;color:#388bfd">B2B</span>
+            <span style="font-size:10px;font-weight:700;color:#22d3ee">Both</span>
+            <span style="font-size:10px;font-weight:700;color:#e3b341">B2C</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4: B2B Channel (L, 2/3) + US Segment Revenue Table (R, 1/3) — height 400 -->
+  <div class="row section" style="height:400px;margin-top:12px">
+
+    <!-- Left: B2B Segment chart (2/3) -->
+    <div class="col col-8">
+      <div class="card" style="height:100%">
+        <div class="card-header">
+          <span class="card-title">B2B Segment Entry Opportunity — Which Channel is Most Open?</span>
+        </div>
+        <div class="card-desc">US-only player counts per B2B channel. Hospital is most contested (7 US players). Pharma/Clinical has only 2 US hardware players but high credibility barriers. Gov/Municipal has zero US players — structurally EU-only. SNF/ALF (5) and Home Care (3) have the fewest US players and no established fleet SaaS platform in either channel.</div>
+        <div class="chart-wrap"><canvas id="segIntensityChart"></canvas></div>
+        <div class="badge-row">
+          <span class="badge badge-data">DATA</span>
+          <span class="badge-label">footprint.md + battle cards — US-headquartered hardware players per B2B segment · Spencer Health added · 2026-05-28</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: US Market End-User Segment Revenue Table (1/3) -->
+    <div class="col col-4">
+      <div class="card" style="height:100%">
+        <div class="card-header">
+          <span class="card-title">US Market — End-User Segment Revenue 2025</span>
+        </div>
+        <div style="flex:1;overflow-y:auto;margin-top:4px">
+          <table style="width:100%;border-collapse:collapse;font-size:10px">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border)">
+                <th style="padding:5px 6px;text-align:left;color:var(--text-dim);font-weight:600">Segment</th>
+                <th style="padding:5px 6px;text-align:right;color:var(--text-dim);font-weight:600;white-space:nowrap">2025 Rev.</th>
+                <th style="padding:5px 6px;text-align:right;color:var(--text-dim);font-weight:600">Share</th>
+                <th style="padding:5px 6px;text-align:right;color:var(--text-dim);font-weight:600">CAGR</th>
+                <th style="padding:5px 6px;text-align:left;color:var(--text-dim);font-weight:600">Channel</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border);border-left:2px solid #22d3ee;background:rgba(34,211,238,.05)">
+                <td style="padding:5px 6px;color:var(--text-h);font-weight:700">Home Care Settings</td>
+                <td style="padding:5px 6px;text-align:right;color:var(--text-h);font-weight:700;white-space:nowrap">$417.16M</td>
+                <td style="padding:5px 6px;text-align:right;color:var(--text-muted)">47.64%</td>
+                <td style="padding:5px 6px;text-align:right;color:#3fb950;font-weight:700">9.53%</td>
+                <td style="padding:5px 6px;color:var(--text-muted)">B2C + B2B home care</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);border-left:2px solid #22d3ee;background:rgba(34,211,238,.05)">
+                <td style="padding:5px 6px;color:var(--text-h);font-weight:700">Nursing Homes &amp; ALFs</td>
+                <td style="padding:5px 6px;text-align:right;color:var(--text-h);font-weight:700;white-space:nowrap">$193.70M</td>
+                <td style="padding:5px 6px;text-align:right;color:var(--text-muted)">22.12%</td>
+                <td style="padding:5px 6px;text-align:right;color:var(--text-muted)">8.69%</td>
+                <td style="padding:5px 6px;color:var(--text-muted)">B2B institutional</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:5px 6px;color:var(--text-muted)">Hospitals</td>
+                <td style="padding:5px 6px;text-align:right;color:var(--text-muted);white-space:nowrap">$132.40M</td>
+                <td style="padding:5px 6px;text-align:right;color:var(--text-muted)">15.12%</td>
+                <td style="padding:5px 6px;text-align:right;color:var(--text-muted)">7.87%</td>
+                <td style="padding:5px 6px;color:var(--text-muted)">B2B institutional</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:5px 6px;color:var(--text-muted)">Pharmacies</td>
+                <td style="padding:5px 6px;text-align:right;color:var(--text-muted);white-space:nowrap">$98.34M</td>
+                <td style="padding:5px 6px;text-align:right;color:var(--text-muted)">11.23%</td>
+                <td style="padding:5px 6px;text-align:right;color:var(--text-muted)">6.69%</td>
+                <td style="padding:5px 6px;color:var(--text-muted)">B2B/B2C hybrid</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:5px 6px;color:var(--text-muted)">Others</td>
+                <td style="padding:5px 6px;text-align:right;color:var(--text-muted);white-space:nowrap">$34.06M</td>
+                <td style="padding:5px 6px;text-align:right;color:var(--text-muted)">3.89%</td>
+                <td style="padding:5px 6px;text-align:right;color:var(--text-muted)">5.68%</td>
+                <td style="padding:5px 6px;color:var(--text-muted)">—</td>
+              </tr>
+              <tr style="border-top:2px solid var(--border)">
+                <td style="padding:5px 6px;color:var(--text-h);font-weight:700">Total US</td>
+                <td style="padding:5px 6px;text-align:right;color:var(--text-h);font-weight:700;white-space:nowrap">$875.66M</td>
+                <td style="padding:5px 6px;text-align:right;color:var(--text-muted);font-weight:600">100%</td>
+                <td style="padding:5px 6px;text-align:right;color:var(--text-muted);font-weight:600">8.67%</td>
+                <td style="padding:5px 6px"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="badge-row" style="margin-top:8px;flex-shrink:0">
+          <span class="badge badge-data">DATA</span>
+          <span class="badge-label">VMR Global Smart Pill Dispenser Market 2026–2033 · Table 16</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- /#market-opportunity -->
+
+<script>
+  // ── Theme toggle ──────────────────────────────────────────────
+  const chartInstances = {};
+
+  function getTheme() {
+    return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+  }
+
+  function toggleTheme() {
+    const next = getTheme() === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next === 'light' ? 'light' : '';
+    document.getElementById('theme-toggle').textContent = next === 'light' ? '🌙 Dark' : '☀ Light';
+    localStorage.setItem('spd-theme', next);
+    rebuildCharts();
+    rerenderMermaid();
+    if (window._rerenderMap) window._rerenderMap();
+  }
+
+  function applyThemeTokens() {
+    const light = getTheme() === 'light';
+    Chart.defaults.color       = light ? '#57606a' : '#8b949e';
+    Chart.defaults.borderColor = light ? '#d0d7de' : '#21262d';
+  }
+
+  function rebuildCharts() {
+    applyThemeTokens();
+    Object.values(chartInstances).forEach(c => c.destroy());
+    buildGlobalShareChart();
+    buildNAShareChart();
+    buildUSChart();
+    buildIntlChart();
+    buildSegmentIntensityChart();
+    buildRegionalFootprintMergedChart();
+    buildCapabilityGapChart();
+    buildCapabilityGapUSChart();
+  }
+
+  // Restore saved preference before paint
+  (function () {
+    const saved = localStorage.getItem('spd-theme') || 'light';
+    if (saved === 'light') {
+      document.documentElement.dataset.theme = 'light';
+      document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('theme-toggle');
+        if (btn) btn.textContent = '🌙 Dark';
+      });
+    }
+  })();
+
+  // ── Chart.js global defaults ──────────────────────────────────
+  applyThemeTokens();
+  Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif";
+  Chart.defaults.font.size = 11;
+
+  function getC() {
+    const light = getTheme() === 'light';
+    return {
+      blue:   '#58a6ff',
+      green:  '#3fb950',
+      orange: '#e3b341',
+      purple: '#d2a8ff',
+      teal:   '#79c0ff',
+      grid:   light ? '#e8ecef' : '#21262d',
+      tick:   light ? '#6e7781' : '#6e7681',
+    };
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // Chart builder functions — called on load and on theme toggle
+  // ══════════════════════════════════════════════════════════════
+
+  // ── 8: Global Telehealth Market Share by Region (Table 126)
+  //
+  // MnM Table 126, Feb 2025 (USD Million)
+  function buildGlobalShareChart() {
+    const C = getC();
+    const gTotals  = [74002.6, 105969.8, 180861.8];
+    const gLabels  = gTotals.map(v => `$${(v/1000).toFixed(1)}B`);
+    const gFmt     = v => v >= 1000 ? `$${(v/1000).toFixed(1)}B` : `$${v.toFixed(0)}M`;
+    const gRegions = [
+      { label: 'North America',       vals: [38821.6, 53858.6, 87196.5], bg: '#4A8FD4', bd: '#5da0e8' },
+      { label: 'Europe',              vals: [17341.1, 24757.5, 42043.6], bg: '#8E6CC5', bd: '#a080d4' },
+      { label: 'Asia Pacific',        vals: [13603.6, 21039.3, 40825.7], bg: '#3DB870', bd: '#50cc83' },
+      { label: 'Latin America',       vals: [ 2582.7,  3787.8,  6727.6], bg: '#D49530', bd: '#e0a840' },
+      { label: 'Middle East & Africa',vals: [ 1653.7,  2526.5,  4068.5], bg: '#C95050', bd: '#d86060' },
+    ];
+    const gPctLabels = { id:'gPctLabels', afterDraw(chart) {
+      const { ctx: c } = chart; c.save();
+      c.font='600 10px -apple-system,system-ui,sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+      c.fillStyle='rgba(255,255,255,0.90)';
+      chart.data.datasets.forEach((_,di) => {
+        const meta=chart.getDatasetMeta(di); if(meta.hidden) return;
+        meta.data.forEach((el,ci) => {
+          if(Math.abs(el.base-el.y)<14) return;
+          c.fillText((gRegions[di].vals[ci]/gTotals[ci]*100).toFixed(1)+'%', el.x, (el.y+el.base)/2);
+        });
+      }); c.restore();
+    }};
+    const gTopTotals = { id:'gTopTotals', afterDraw(chart) {
+      const { ctx:c, chartArea:{top}, scales:{x} } = chart; c.save();
+      c.textAlign='center'; c.textBaseline='bottom';
+      gLabels.forEach((label,i) => {
+        const bold=i===2;
+        c.font=`${bold?'700':'500'} 12px -apple-system,system-ui,sans-serif`;
+        c.fillStyle=bold ? (getTheme()==='light'?'#1f2328':'#f0f6fc') : C.tick;
+        c.fillText(label, x.getPixelForValue(i), top-4);
+      }); c.restore();
+    }};
+    const gColHighlight = { id:'gColHighlight', beforeDatasetsDraw(chart) {
+      const { ctx:c, chartArea } = chart; const meta=chart.getDatasetMeta(0);
+      if(!meta.data[2]) return; const bar=meta.data[2]; const w=bar.width+10;
+      c.save(); c.strokeStyle='rgba(88,166,255,0.22)'; c.lineWidth=1.5;
+      c.strokeRect(bar.x-w/2, chartArea.top-2, w, chartArea.bottom-chartArea.top+4); c.restore();
+    }};
+    chartInstances.globalShare = new Chart(document.getElementById('globalShareChart'), {
+      type: 'bar',
+      data: { labels:['2022','2025','2030 Proj.'], datasets: gRegions.map(r=>({ label:r.label, data:r.vals, backgroundColor:r.bg, borderColor:r.bd, borderWidth:1, maxBarThickness:100 })) },
+      plugins: [gPctLabels, gTopTotals, gColHighlight],
+      options: {
+        responsive:true, maintainAspectRatio:false, layout:{padding:{top:30}},
+        plugins: {
+          legend: { position:'bottom', labels:{ usePointStyle:true, pointStyle:'rect', color:C.label, font:{size:11}, boxWidth:12, boxHeight:12, padding:14 } },
+          tooltip: { callbacks: { title: ctx=>`${ctx[0].label} · ${ctx[0].dataset.label}`, label: ctx=>{ const pct=gRegions[ctx.datasetIndex].vals[ctx.dataIndex]/gTotals[ctx.dataIndex]*100; return[`  Value: ${gFmt(gRegions[ctx.datasetIndex].vals[ctx.dataIndex])}`,`  Share: ${pct.toFixed(1)}%`]; } } }
+        },
+        scales: {
+          x: { stacked:true, grid:{display:false}, border:{display:false}, ticks:{ color: ctx=>ctx.index===2 ? (getTheme()==='light'?'#1f2328':'#f0f6fc') : C.label, font: ctx=>({size:12, weight:ctx.index===2?'700':'400'}) } },
+          y: { stacked:true, grid:{color:C.grid}, border:{color:C.grid}, ticks:{ callback:v=>v>=1000?`$${(v/1000).toFixed(0)}B`:`$${v}M`, color:C.tick } },
+        },
+      },
+    });
+  }
+
+  // ── 8b: NA breakdown: US vs Canada (Tables 126 + 127)
+  function buildNAShareChart() {
+    const C = getC();
+    const naTotals  = [38821.6, 53858.6, 87196.5];
+    const naLabels  = naTotals.map(v => `$${(v/1000).toFixed(1)}B`);
+    const naFmt     = v => v >= 1000 ? `$${(v/1000).toFixed(1)}B` : `$${v.toFixed(0)}M`;
+    const naRegions = [
+      { label:'United States', vals:[36937.5, 51398.6, 83630.7], bg:'#4A8FD4', bd:'#5da0e8' },
+      { label:'Canada',        vals:[ 1884.1,  2460.0,  3565.8], bg:'#f59e0b', bd:'#fbbf24' },
+    ];
+    const naPctLabels = { id:'naPctLabels', afterDraw(chart) {
+      const { ctx:c }=chart; c.save();
+      c.font='600 10px -apple-system,system-ui,sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+      c.fillStyle='rgba(255,255,255,0.90)';
+      chart.data.datasets.forEach((_,di) => {
+        const meta=chart.getDatasetMeta(di); if(meta.hidden) return;
+        meta.data.forEach((el,ci) => {
+          if(Math.abs(el.base-el.y)<14) return;
+          c.fillText((naRegions[di].vals[ci]/naTotals[ci]*100).toFixed(1)+'%', el.x, (el.y+el.base)/2);
+        });
+      }); c.restore();
+    }};
+    const naTopTotals = { id:'naTopTotals', afterDraw(chart) {
+      const { ctx:c, chartArea:{top}, scales:{x} }=chart; c.save();
+      c.textAlign='center'; c.textBaseline='bottom';
+      naLabels.forEach((label,i) => {
+        const bold=i===2;
+        c.font=`${bold?'700':'500'} 12px -apple-system,system-ui,sans-serif`;
+        c.fillStyle=bold ? (getTheme()==='light'?'#1f2328':'#f0f6fc') : C.tick;
+        c.fillText(label, x.getPixelForValue(i), top-4);
+      }); c.restore();
+    }};
+    const naColHighlight = { id:'naColHighlight', beforeDatasetsDraw(chart) {
+      const { ctx:c, chartArea }=chart; const meta=chart.getDatasetMeta(0);
+      if(!meta.data[2]) return; const bar=meta.data[2]; const w=bar.width+10;
+      c.save(); c.strokeStyle='rgba(88,166,255,0.22)'; c.lineWidth=1.5;
+      c.strokeRect(bar.x-w/2, chartArea.top-2, w, chartArea.bottom-chartArea.top+4); c.restore();
+    }};
+    chartInstances.naShare = new Chart(document.getElementById('naShareChart'), {
+      type:'bar',
+      data: { labels:['2022','2025','2030 Proj.'], datasets: naRegions.map(r=>({ label:r.label, data:r.vals, backgroundColor:r.bg, borderColor:r.bd, borderWidth:1, maxBarThickness:100 })) },
+      plugins:[naPctLabels, naTopTotals, naColHighlight],
+      options: {
+        responsive:true, maintainAspectRatio:false, layout:{padding:{top:30}},
+        plugins: {
+          legend: { position:'bottom', labels:{ usePointStyle:true, pointStyle:'rect', color:C.label, font:{size:11}, boxWidth:12, boxHeight:12, padding:14 } },
+          tooltip: { callbacks: { title: ctx=>`${ctx[0].label} · ${ctx[0].dataset.label}`, label: ctx=>{ const pct=naRegions[ctx.datasetIndex].vals[ctx.dataIndex]/naTotals[ctx.dataIndex]*100; return[`  Value: ${naFmt(naRegions[ctx.datasetIndex].vals[ctx.dataIndex])}`,`  Share of NA: ${pct.toFixed(1)}%`]; } } }
+        },
+        scales: {
+          x: { stacked:true, grid:{display:false}, border:{display:false}, ticks:{ color: ctx=>ctx.index===2?(getTheme()==='light'?'#1f2328':'#f0f6fc'):C.label, font: ctx=>({size:12, weight:ctx.index===2?'700':'400'}) } },
+          y: { stacked:true, grid:{color:C.grid}, border:{color:C.grid}, ticks:{ callback:v=>v>=1000?`$${(v/1000).toFixed(0)}B`:`$${v}M`, color:C.tick } },
+        },
+      },
+    });
+  }
+
+  // ── 9a + 9b: Market Sizing Layers — shared data, two separate functions
+  // TAM: MnM Table 126 · SW/Services/HW/PM: Tables 142/156/185/199/298/326
+  const _msl = {
+    s25: [[34924.4,1672.4,4455.6,2989.4,3614.8,1309.5],[4437.1,222.2,571.1,390.9,454.1,167.5],[964.1,46.0,124.9,80.9,101.6,34.3],[10649.5,464.5,1311.2,886.4,1083.0,412.0],[423.5,54.9,81.6,68.8,66.4,0.0]],
+    s30: [[58550.8,2497.8,7914.0,5524.9,6873.0,2427.5],[6919.8,308.1,941.6,673.6,803.4,288.3],[1383.2,58.8,189.8,128.0,165.4,54.4],[16109.2,622.0,2117.3,1489.0,1872.9,690.1],[667.7,79.1,118.7,106.3,102.3,0.0]],
+    tam25: [51398.6,2460.0,6544.4,4416.5,5319.9,1923.3],
+    tam30: [83630.7,3565.8,11281.4,7921.8,9817.0,3460.4],
+    SEGS: [
+      { label:'Software',                      bg:'#6e7681', bd:'#8b949e' },
+      { label:'Services',                       bg:'#8b5cf6', bd:'#a78bfa' },
+      { label:'Other Hardware (Kits/Carts)',    bg:'#0891b2', bd:'#22d3ee' },
+      { label:'Patient Monitoring — other',     bg:'#d97706', bd:'#fbbf24' },
+      { label:'Automatic Pill Dispenser ◀ SAM₂',bg:'#2563eb', bd:'#3b82f6' },
+    ],
+    fmt: v => v >= 1000 ? `$${(v/1000).toFixed(1)}B` : `$${v.toFixed(0)}M`,
+  };
+
+  function buildUSChart() {
+    const C = getC();
+    const { s25, s30, tam25, tam30, SEGS, fmt } = _msl;
+    const usData = s25.map((a,i) => [a[0], s30[i][0]]);
+    const usTam  = [tam25[0], tam30[0]];
+    const scaleOpts = {
+      x: { stacked:true, grid:{display:false}, border:{display:false}, ticks:{ color:C.label } },
+      y: { stacked:true, grid:{color:C.grid}, border:{color:C.grid}, ticks:{ callback:v=>v>=1000?`$${(v/1000).toFixed(0)}B`:`$${v}M`, color:C.tick } }
+    };
+    const legendOpts = { position:'bottom', labels:{ filter:item=>item.datasetIndex<5, usePointStyle:true, pointStyle:'rect', color:C.label, font:{size:10}, boxWidth:10, boxHeight:10, padding:10 } };
+    const pctPlugin = { id:'pctUS', afterDraw(chart) {
+      const { ctx:c }=chart; c.save();
+      c.font='600 9px -apple-system,system-ui,sans-serif'; c.textAlign='center'; c.textBaseline='middle'; c.fillStyle='rgba(255,255,255,0.88)';
+      chart.data.datasets.forEach((_,di) => { const meta=chart.getDatasetMeta(di); if(meta.hidden)return; meta.data.forEach((el,ci) => { if(Math.abs(el.base-el.y)<12)return; c.fillText((usData[di][ci]/usTam[ci]*100).toFixed(1)+'%',el.x,(el.y+el.base)/2); }); });
+      c.restore();
+    }};
+    chartInstances.usChart = new Chart(document.getElementById('cmlUSChart'), {
+      type:'bar', data:{ labels:['2025','2030 Proj.'], datasets:SEGS.map((s,idx)=>({ label:s.label, data:usData[idx], backgroundColor:s.bg, borderColor:s.bd, borderWidth:1, maxBarThickness:100 })) },
+      plugins:[pctPlugin],
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:legendOpts, tooltip:{ callbacks:{ title:ctx=>`US · ${ctx[0].label}`, label:ctx=>{ const v=usData[ctx.datasetIndex][ctx.dataIndex]; return `  ${SEGS[ctx.datasetIndex].label}: ${fmt(v)}  (${(v/usTam[ctx.dataIndex]*100).toFixed(1)}%)`; } } } }, scales:scaleOpts }
+    });
+  }
+
+  function buildIntlChart() {
+    const C = getC();
+    const { s25, s30, tam25, tam30, SEGS, fmt } = _msl;
+    const slice = a => a.slice(1);
+    const s25i=s25.map(slice), s30i=s30.map(slice), tam25i=slice(tam25), tam30i=slice(tam30);
+    const is30=di=>di>=5, si=di=>di%5;
+    const getAbs=(di,ci)=>(is30(di)?s30i:s25i)[si(di)][ci];
+    const getTam=(di,ci)=>(is30(di)?tam30i:tam25i)[ci];
+    const ctryLabels=['Canada','Germany','UK','Japan','Australia²'];
+    const scaleOpts = {
+      x: { stacked:true, grid:{color:C.grid}, border:{color:C.grid}, ticks:{color:C.label} },
+      y: { stacked:true, grid:{color:C.grid}, border:{color:C.grid}, ticks:{ callback:v=>v>=1000?`$${(v/1000).toFixed(0)}B`:`$${v}M`, color:C.tick } }
+    };
+    const legendOpts = { position:'bottom', labels:{ filter:item=>item.datasetIndex<5, usePointStyle:true, pointStyle:'rect', color:C.label, font:{size:10}, boxWidth:10, boxHeight:10, padding:10 } };
+    const pctPlugin = { id:'pctIntl', afterDraw(chart) {
+      const { ctx:c }=chart; c.save();
+      c.font='600 9px -apple-system,system-ui,sans-serif'; c.textAlign='center'; c.textBaseline='middle'; c.fillStyle='rgba(255,255,255,0.88)';
+      chart.data.datasets.forEach((_,di) => { const meta=chart.getDatasetMeta(di); if(meta.hidden)return; meta.data.forEach((el,ci) => { if(Math.abs(el.base-el.y)<12)return; c.fillText((getAbs(di,ci)/getTam(di,ci)*100).toFixed(1)+'%',el.x,(el.y+el.base)/2); }); });
+      c.restore();
+    }};
+    const yearPlugin = { id:'yearIntl', afterDraw(chart) {
+      const { ctx:c }=chart; const m25=chart.getDatasetMeta(0); const m30=chart.getDatasetMeta(5);
+      if(!m25.data.length||!m30.data.length) return;
+      c.save(); c.font="600 8px -apple-system,sans-serif"; c.textAlign='center'; c.textBaseline='top';
+      m25.data.forEach(el=>{ c.fillStyle=C.label; c.fillText("'25",el.x,el.base+3); });
+      m30.data.forEach(el=>{ c.fillStyle='#79c0ffcc'; c.fillText("'30",el.x,el.base+3); });
+      c.restore();
+    }};
+    chartInstances.intlChart = new Chart(document.getElementById('cmlIntlChart'), {
+      type:'bar',
+      data:{ labels:ctryLabels, datasets:[ ...SEGS.map((s,idx)=>({ label:s.label, data:s25i[idx], backgroundColor:s.bg, borderColor:s.bd, borderWidth:1, maxBarThickness:55, stack:'2025' })), ...SEGS.map((s,idx)=>({ label:s.label+' ▸', data:s30i[idx], backgroundColor:s.bg, borderColor:s.bd, borderWidth:1, maxBarThickness:55, stack:'2030' })) ] },
+      plugins:[pctPlugin, yearPlugin],
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:legendOpts, tooltip:{ callbacks:{ title:ctx=>{ return `${ctryLabels[ctx[0].dataIndex]} · ${is30(ctx[0].datasetIndex)?'2030 (proj.)':'2025'}`; }, label:ctx=>{ const v=getAbs(ctx.datasetIndex,ctx.dataIndex); return `  ${_msl.SEGS[si(ctx.datasetIndex)].label}: ${fmt(v)}  (${(v/getTam(ctx.datasetIndex,ctx.dataIndex)*100).toFixed(1)}%)`; } } } }, scales:scaleOpts }
+    });
+  }
+
+  // ── Chart A: Competitive Intensity by Segment ─────────────────
+  // Source: footprint.md + battle cards — US-only hardware players per segment
+  // Spencer Health added to Home Care + SNF; Gov/Municipal = 0 US players
+  function buildSegmentIntensityChart() {
+    const C = getC();
+    const light = getTheme() === 'light';
+    const labels = [
+      'B2B Home Care  ← our target',
+      'B2B SNF / ALF  ← our target',
+      'B2B Hospital / Health System',
+      'B2B Pharma / Clinical',
+      'B2B Gov / Municipal',
+    ];
+    const values   = [3, 5, 7, 2, 0];
+    const bgColors = [
+      'rgba(63,185,80,.68)',    // LOW — green  (Home Care)
+      'rgba(34,211,238,.75)',   // LOW-MEDIUM — teal (SNF/ALF)
+      'rgba(227,179,65,.80)',   // MEDIUM — amber (Hospital)
+      'rgba(63,185,80,.68)',    // LOW — green  (Pharma)
+      'rgba(110,118,129,.35)',  // NONE — gray  (Gov/Municipal)
+    ];
+    const bdColors = ['#3fb950','#22d3ee','#e3b341','#3fb950','#6e7681'];
+    const tags     = [
+      'LOW  ·  3 US players, no fleet SaaS',
+      'LOW–MEDIUM  ·  5 US players, no fleet SaaS',
+      'MEDIUM  ·  7 US players',
+      'LOW  ·  specialist niche / credibility barrier',
+      'EU ONLY  ·  0 US players',
+    ];
+
+    const siLbl = { id: 'siLbl', afterDraw(chart) {
+      const { ctx: c, scales: { x } } = chart; c.save();
+      chart.getDatasetMeta(0).data.forEach((bar, i) => {
+        const px = x.getPixelForValue(values[i]);
+        c.font = `700 11px -apple-system,system-ui,sans-serif`;
+        c.fillStyle = light ? '#1f2328' : '#f0f6fc';
+        c.textAlign = 'left'; c.textBaseline = 'middle';
+        c.fillText(`${values[i]}`, px + 7, bar.y);
+        c.font = `400 10px -apple-system,system-ui,sans-serif`;
+        c.fillStyle = bdColors[i];
+        c.fillText(tags[i], px + 26, bar.y);
+      }); c.restore();
+    }};
+
+    chartInstances.segIntensity = new Chart(document.getElementById('segIntensityChart'), {
+      type: 'bar',
+      data: { labels, datasets: [{ data: values, backgroundColor: bgColors, borderColor: bdColors, borderWidth: 1, borderRadius: 3, maxBarThickness: 28 }] },
+      plugins: [siLbl],
+      options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        layout: { padding: { right: 290 } },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { title: c => c[0].label, label: c => `  ${c.raw} US players  ·  ${tags[c.dataIndex]}` } },
+        },
+        scales: {
+          x: { grid: { color: C.grid }, border: { color: C.grid }, ticks: { color: C.tick, stepSize: 1 }, max: 8 },
+          y: { grid: { display: false }, border: { display: false }, ticks: { color: light ? '#24292f' : '#c9d1d9', font: { size: 12 } } },
+        },
+      },
+    });
+  }
+
+  // ── Chart B: Regional Footprint ────────────────────────────────
+  // Source: footprint.md Player-by-Player + Regional Concentration
+  // ── Chart A: Regional Footprint — continent-level, EU merged ────
+  function buildRegionalFootprintMergedChart() {
+    const C = getC();
+    const light = getTheme() === 'light';
+    const labels = ['North America', 'Europe', 'Asia-Pacific', 'Latin America', 'MEA'];
+    // 28 hardware players from Chart 3 mapped to regional presence (VMR Table 139 + footprint.md)
+    // Stack order bottom→top: B2C → Both → B2B → EHR Integration
+    // EHR is split from B2B top so bar height = actual player count (no double-count)
+    const b2c  = [ 6, 2, 2, 0, 1]; // B2C-only players per continent
+    const both = [11, 4, 4, 1, 1]; // B2B + B2C players per continent
+    const b2b  = [ 6, 3, 3, 1, 2]; // B2B-only without EHR
+    const ehr  = [ 0, 1, 0, 0, 0]; // EHR Integration (Evondos in EU only)
+
+    const rfAnnot = { id: 'rfAnnot', afterDraw(chart) {
+      const { ctx: c } = chart; c.save();
+      const bar = chart.getDatasetMeta(3).data[1]; // EHR dataset, EU = index 1
+      if (!bar) { c.restore(); return; }
+      c.font = `600 10px -apple-system,system-ui,sans-serif`;
+      c.fillStyle = light ? '#16a34a' : '#56d364';
+      c.textAlign = 'center'; c.textBaseline = 'bottom';
+      c.fillText('★ Evondos', bar.x, bar.y - 6);
+      c.restore();
+    }};
+
+    chartInstances.regionalFootprintMerged = new Chart(document.getElementById('regionalFootprintMergedChart'), {
+      type: 'bar',
+      data: { labels, datasets: [
+        { label: 'B2C',             data: b2c,  backgroundColor: 'rgba(227,179,65,.75)', borderColor: '#e3b341', borderWidth: 1, borderRadius: 3, maxBarThickness: 70 },
+        { label: 'B2B + B2C',       data: both, backgroundColor: 'rgba(34,211,238,.65)', borderColor: '#22d3ee', borderWidth: 1, borderRadius: 3, maxBarThickness: 70 },
+        { label: 'B2B',             data: b2b,  backgroundColor: 'rgba(56,139,253,.75)', borderColor: '#388bfd', borderWidth: 1, borderRadius: 3, maxBarThickness: 70 },
+        { label: 'EHR Integration', data: ehr,  backgroundColor: 'rgba(63,185,80,.90)',  borderColor: '#3fb950', borderWidth: 2, borderRadius: 3, maxBarThickness: 70 },
+      ]},
+      plugins: [rfAnnot],
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        layout: { padding: { top: 30 } },
+        plugins: {
+          legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'rect', color: light ? '#57606a' : '#8b949e', font: { size: 11 }, boxWidth: 12, boxHeight: 12, padding: 14 } },
+          tooltip: { callbacks: { title: c => `${c[0].label}`, label: c => `  ${c.dataset.label}: ${c.raw}` } },
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { color: light ? '#24292f' : '#c9d1d9', font: { size: 12 } } },
+          y: { stacked: true, grid: { color: C.grid }, border: { color: C.grid }, ticks: { color: C.tick, stepSize: 2 }, max: 26 },
+        },
+      },
+    });
+  }
+
+  // ── Chart C: Capability Gap ─────────────────────────────────────
+  // Source: footprint.md Regional Footprint + Product Type table
+  // Capabilities: HW / App-SW / Platform / Service / EHR Integration
+  // ── Chart C: Capability Gap — Global, 28 hardware players, vertical, grouped ─
+  function buildCapabilityGapChart() {
+    const C = getC();
+    const light = getTheme() === 'light';
+    // Ordered: B2B (0-8), Both (9-21), B2C (22-27)
+    const companies = [
+      'Evondos ★','Spencer Health','Medipense','AdhereTech','Tenovi','Centor','AARDEX','Wisepill','Pill Connect',
+      'Karie Health','MedMinder','Dose Health','Hero Health','Pharm Adva','PharmRight','MedReady','Pivotell','Pharmacell','PillDrill','MOBI USA','DeepSea','e-Pill',
+      'LiveFine','EllieGrid','iRx Reminder','Addinex','Loba Wellness','Tabtime',
+    ];
+    const caps = [
+      [1,1,1,1,1],[1,1,1,1,0],[1,1,1,1,0],[1,1,1,1,0],[1,0,1,1,0],[1,0,1,1,0],[1,0,1,1,0],[1,0,1,1,0],[1,0,1,1,0],
+      [1,1,1,1,0],[1,1,1,1,0],[1,1,0,1,0],[1,1,0,1,0],[1,1,0,1,0],[1,1,0,1,0],[1,1,0,1,0],[1,1,0,1,0],[1,1,0,1,0],[1,1,0,0,0],[1,1,0,0,0],[1,1,0,0,0],[1,0,0,0,0],
+      [1,1,0,0,0],[1,1,0,0,0],[1,1,0,0,0],[1,1,0,0,0],[1,1,0,0,0],[1,0,0,0,0],
+    ];
+    const mkts = [
+      'b2b','b2b','b2b','b2b','b2b','b2b','b2b','b2b','b2b',
+      'both','both','both','both','both','both','both','both','both','both','both','both','both',
+      'b2c','b2c','b2c','b2c','b2c','b2c',
+    ];
+    const capLabels = ['Hardware','App / Software','Platform','Service','EHR Integration'];
+    const capColors = [
+      { bg:'rgba(56,139,253,.75)',  bd:'#388bfd' },
+      { bg:'rgba(139,108,218,.75)', bd:'#8b6cda' },
+      { bg:'rgba(34,211,238,.65)',  bd:'#22d3ee' },
+      { bg:'rgba(227,179,65,.75)',  bd:'#e3b341' },
+      { bg:'rgba(63,185,80,.90)',   bd:'#3fb950' },
+    ];
+    const mktCol = (m) => m==='b2b'?(light?'#1d6aeb':'#58a6ff'):m==='b2c'?(light?'#b35c00':'#e3b341'):(light?'#0e7a8a':'#22d3ee');
+
+    const cgAnnot = { id:'cgAnnot', afterDraw(chart) {
+      const { ctx:c } = chart; c.save();
+      const bar = chart.getDatasetMeta(4).data[0];
+      if (!bar) { c.restore(); return; }
+      c.font=`700 9px -apple-system,system-ui,sans-serif`;
+      c.fillStyle=light?'#16a34a':'#56d364';
+      c.textAlign='center'; c.textBaseline='bottom';
+      c.fillText('★ only', bar.x, bar.y-4);
+      c.restore();
+    }};
+
+    // Group separator + label plugin
+    const cgGroups = [
+      { label:'B2B',       from:0,  to:8,  color: mktCol('b2b')  },
+      { label:'B2B + B2C', from:9,  to:21, color: mktCol('both') },
+      { label:'B2C',       from:22, to:27, color: mktCol('b2c')  },
+    ];
+    const cgGroupPlugin = { id:'cgGroupPlugin', afterDraw(chart) {
+      const { ctx:c, chartArea } = chart; c.save();
+      const bracketY = chart.height - 22;
+      const labelY   = chart.height - 8;
+      cgGroups.forEach((g, gi) => {
+        const m0 = chart.getDatasetMeta(0);
+        const bF = m0.data[g.from], bT = m0.data[g.to];
+        if (!bF || !bT) return;
+        const bw = bF.width / 2;
+        const x1 = bF.x - bw - 2, x2 = bT.x + bw + 2, xMid = (x1+x2)/2;
+        c.strokeStyle = light?'rgba(0,0,0,.18)':'rgba(255,255,255,.18)';
+        c.lineWidth=1; c.setLineDash([]);
+        c.beginPath(); c.moveTo(x1,bracketY-4); c.lineTo(x1,bracketY); c.lineTo(x2,bracketY); c.lineTo(x2,bracketY-4); c.stroke();
+        c.font=`600 10px -apple-system,system-ui,sans-serif`;
+        c.fillStyle=g.color; c.textAlign='center'; c.textBaseline='bottom';
+        c.fillText(g.label, xMid, labelY);
+        if (gi > 0) {
+          const prevT = m0.data[cgGroups[gi-1].to];
+          const sepX = prevT ? (prevT.x + prevT.width/2 + bF.x - bw) / 2 : x1;
+          c.strokeStyle=light?'rgba(0,0,0,.1)':'rgba(255,255,255,.1)';
+          c.lineWidth=1; c.setLineDash([4,3]);
+          c.beginPath(); c.moveTo(sepX,chartArea.top-2); c.lineTo(sepX,bracketY-4); c.stroke();
+          c.setLineDash([]);
+        }
+      }); c.restore();
+    }};
+
+    chartInstances.capabilityGap = new Chart(document.getElementById('capabilityGapChart'), {
+      type:'bar',
+      data:{ labels:companies, datasets:capLabels.map((label,ci)=>({
+        label, data:companies.map((_,co)=>caps[co][ci]),
+        backgroundColor:capColors[ci].bg, borderColor:capColors[ci].bd,
+        borderWidth:1, maxBarThickness:24,
+      }))},
+      plugins:[cgAnnot, cgGroupPlugin],
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        layout:{ padding:{ top:20, bottom:34 } },
+        plugins:{
+          legend:{ position:'bottom', labels:{ usePointStyle:true, pointStyle:'rect', color:light?'#57606a':'#8b949e', font:{size:11}, boxWidth:12, boxHeight:12, padding:12 } },
+          tooltip:{ callbacks:{
+            title: c=>c[0].label.replace(' ★',''),
+            label: c=>`  ${c.dataset.label}: ${c.raw===1?'✓ Present':'—'}`,
+            afterBody: c=>[`  Market: ${mkts[c[0].dataIndex]==='b2b'?'B2B only':mkts[c[0].dataIndex]==='b2c'?'B2C only':'B2B + B2C'}`],
+          }},
+        },
+        scales:{
+          x:{ stacked:true, grid:{display:false}, border:{display:false},
+            ticks:{ color:ctx=>mktCol(mkts[ctx.index]), font:{size:10}, maxRotation:45, minRotation:45 } },
+          y:{ stacked:true, grid:{color:C.grid}, border:{color:C.grid},
+            ticks:{color:C.tick, stepSize:1}, max:6 },
+        },
+      },
+    });
+  }
+
+  // ── Chart C2: Capability Gap — US-only, 19 players, vertical, grouped ───
+  function buildCapabilityGapUSChart() {
+    const C = getC();
+    const light = getTheme() === 'light';
+    // Ordered: B2B (0-3), Both (4-13), B2C (14-18)
+    const companies = [
+      'Spencer Health','AdhereTech','Tenovi','Centor',
+      'MedMinder','Dose Health','Hero Health','Pharm Adva','PharmRight','MedReady','PillDrill','MOBI USA','DeepSea','e-Pill',
+      'LiveFine','EllieGrid','iRx Reminder','Addinex','Loba Wellness',
+    ];
+    const caps = [
+      [1,1,1,1,0],[1,1,1,1,0],[1,0,1,1,0],[1,0,1,1,0],
+      [1,1,1,1,0],[1,1,0,1,0],[1,1,0,1,0],[1,1,0,1,0],[1,1,0,1,0],[1,1,0,1,0],[1,1,0,0,0],[1,1,0,0,0],[1,1,0,0,0],[1,0,0,0,0],
+      [1,1,0,0,0],[1,1,0,0,0],[1,1,0,0,0],[1,1,0,0,0],[1,1,0,0,0],
+    ];
+    const mkts = [
+      'b2b','b2b','b2b','b2b',
+      'both','both','both','both','both','both','both','both','both','both',
+      'b2c','b2c','b2c','b2c','b2c',
+    ];
+    const capLabels = ['Hardware','App / Software','Platform','Service','EHR Integration'];
+    const capColors = [
+      { bg:'rgba(56,139,253,.75)',  bd:'#388bfd' },
+      { bg:'rgba(139,108,218,.75)', bd:'#8b6cda' },
+      { bg:'rgba(34,211,238,.65)',  bd:'#22d3ee' },
+      { bg:'rgba(227,179,65,.75)',  bd:'#e3b341' },
+      { bg:'rgba(63,185,80,.90)',   bd:'#3fb950' },
+    ];
+    const mktCol = (m) => m==='b2b'?(light?'#1d6aeb':'#58a6ff'):m==='b2c'?(light?'#b35c00':'#e3b341'):(light?'#0e7a8a':'#22d3ee');
+
+    const usEHRLine = { id:'usEHRLine', afterDraw(chart) {
+      const { ctx:c, chartArea, scales:{y} } = chart; c.save();
+      const yPos = y.getPixelForValue(5);
+      c.strokeStyle=light?'rgba(63,185,80,.45)':'rgba(63,185,80,.35)';
+      c.lineWidth=1.5; c.setLineDash([6,4]);
+      c.beginPath(); c.moveTo(chartArea.left,yPos); c.lineTo(chartArea.right,yPos); c.stroke();
+      c.setLineDash([]);
+      c.font=`500 9px -apple-system,system-ui,sans-serif`;
+      c.fillStyle=light?'rgba(22,163,74,.75)':'rgba(86,211,100,.6)';
+      c.textAlign='right'; c.textBaseline='bottom';
+      c.fillText('← EHR Integration absent in all 19 US players', chartArea.right, yPos-3);
+      c.restore();
+    }};
+
+    const usGroups = [
+      { label:'B2B',       from:0,  to:3,  color: mktCol('b2b')  },
+      { label:'B2B + B2C', from:4,  to:13, color: mktCol('both') },
+      { label:'B2C',       from:14, to:18, color: mktCol('b2c')  },
+    ];
+    const usGroupPlugin = { id:'usGroupPlugin', afterDraw(chart) {
+      const { ctx:c, chartArea } = chart; c.save();
+      const bracketY = chart.height - 22;
+      const labelY   = chart.height - 8;
+      usGroups.forEach((g, gi) => {
+        const m0 = chart.getDatasetMeta(0);
+        const bF = m0.data[g.from], bT = m0.data[g.to];
+        if (!bF || !bT) return;
+        const bw = bF.width / 2;
+        const x1 = bF.x - bw - 2, x2 = bT.x + bw + 2, xMid = (x1+x2)/2;
+        c.strokeStyle = light?'rgba(0,0,0,.18)':'rgba(255,255,255,.18)';
+        c.lineWidth=1; c.setLineDash([]);
+        c.beginPath(); c.moveTo(x1,bracketY-4); c.lineTo(x1,bracketY); c.lineTo(x2,bracketY); c.lineTo(x2,bracketY-4); c.stroke();
+        c.font=`600 10px -apple-system,system-ui,sans-serif`;
+        c.fillStyle=g.color; c.textAlign='center'; c.textBaseline='bottom';
+        c.fillText(g.label, xMid, labelY);
+        if (gi > 0) {
+          const prevT = m0.data[usGroups[gi-1].to];
+          const sepX = prevT ? (prevT.x + prevT.width/2 + bF.x - bw) / 2 : x1;
+          c.strokeStyle=light?'rgba(0,0,0,.1)':'rgba(255,255,255,.1)';
+          c.lineWidth=1; c.setLineDash([4,3]);
+          c.beginPath(); c.moveTo(sepX,chartArea.top-2); c.lineTo(sepX,bracketY-4); c.stroke();
+          c.setLineDash([]);
+        }
+      }); c.restore();
+    }};
+
+    chartInstances.capabilityGapUS = new Chart(document.getElementById('capabilityGapUSChart'), {
+      type:'bar',
+      data:{ labels:companies, datasets:capLabels.map((label,ci)=>({
+        label, data:companies.map((_,co)=>caps[co][ci]),
+        backgroundColor:capColors[ci].bg, borderColor:capColors[ci].bd,
+        borderWidth:1, maxBarThickness:36,
+      }))},
+      plugins:[usEHRLine, usGroupPlugin],
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        layout:{ padding:{ top:20, bottom:34 } },
+        plugins:{
+          legend:{ position:'bottom', labels:{ usePointStyle:true, pointStyle:'rect', color:light?'#57606a':'#8b949e', font:{size:11}, boxWidth:12, boxHeight:12, padding:12 } },
+          tooltip:{ callbacks:{
+            title: c=>c[0].label,
+            label: c=>`  ${c.dataset.label}: ${c.raw===1?'✓ Present':'—'}`,
+            afterBody: c=>[`  Market: ${mkts[c[0].dataIndex]==='b2b'?'B2B only':mkts[c[0].dataIndex]==='b2c'?'B2C only':'B2B + B2C'}`],
+          }},
+        },
+        scales:{
+          x:{ stacked:true, grid:{display:false}, border:{display:false},
+            ticks:{ color:ctx=>mktCol(mkts[ctx.index]), font:{size:10}, maxRotation:45, minRotation:45 } },
+          y:{ stacked:true, grid:{color:C.grid}, border:{color:C.grid},
+            ticks:{color:C.tick, stepSize:1}, max:6 },
+        },
+      },
+    });
+  }
+
+  // ── Mermaid theme switching ──────────────────────────────────
+  const MERMAID_CFG = {
+    dark: {
+      startOnLoad: false,
+      theme: 'dark',
+      themeVariables: {
+        background: '#161b22', mainBkg: '#1c2128', nodeBorder: '#30363d',
+        clusterBkg: '#161b22', edgeLabelBackground: '#1c2128', lineColor: '#6e7681',
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif",
+        fontSize: '13px',
+      },
+      flowchart: { curve: 'basis', padding: 18 },
+    },
+    light: {
+      startOnLoad: false,
+      theme: 'default',
+      themeVariables: {
+        background: '#ffffff', mainBkg: '#f6f8fa', nodeBorder: '#d0d7de',
+        clusterBkg: '#f6f8fa', edgeLabelBackground: '#f6f8fa', lineColor: '#57606a',
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif",
+        fontSize: '13px',
+      },
+      flowchart: { curve: 'basis', padding: 18 },
+    },
+  };
+
+  const CLASSDEFS_LIGHT = {
+    product:   'fill:#dbeafe,stroke:#0969da,color:#0d2d5e,stroke-width:2px',
+    buyer:     'fill:#d1fadf,stroke:#1a7f37,color:#0a3520,stroke-width:2px',
+    user:      'fill:#fff8e1,stroke:#c9a020,color:#4a3200,stroke-width:2px',
+    provider:  'fill:#ede9ff,stroke:#6e40c9,color:#2d1f6e,stroke-width:2px',
+    payer:     'fill:#ccfbf1,stroke:#0891b2,color:#063031',
+    regul:     'fill:#fee2e2,stroke:#cf222e,color:#5a1818,stroke-width:1px',
+    gray:      'fill:#f6f8fa,stroke:#8b949e,color:#57606a,stroke-width:1px',
+    secondary: 'fill:#f6f8fa,stroke:#8b949e,color:#57606a,stroke-width:1px',
+    compete:   'fill:#fee2e2,stroke:#cf222e,color:#5a1818,stroke-width:1px,stroke-dasharray:4 4',
+    nopay:     'fill:#fee2e2,stroke:#cf222e,color:#5a1818,stroke-width:2px',
+    cat1:      'fill:#fff8e1,stroke:#c9a020,color:#4a3200,stroke-width:2px',
+    cat2:      'fill:#d1fadf,stroke:#1a7f37,color:#0a3520,stroke-width:2px',
+    cat3:      'fill:#ede9ff,stroke:#6e40c9,color:#2d1f6e,stroke-width:2px',
+    cat4:      'fill:#dbeafe,stroke:#0969da,color:#0d2d5e,stroke-width:2px',
+    cat5:      'fill:#fee2e2,stroke:#cf222e,color:#5a1818,stroke-width:2px',
+    pain:      'fill:#f6f8fa,stroke:#8b949e,color:#57606a,stroke-width:1px,stroke-dasharray:5 3',
+    unlock:    'fill:#d1fae5,stroke:#16a34a,color:#052e16,stroke-width:2px',
+  };
+
+  function getMermaidSrc(el, isLight) {
+    let src = el.dataset.src;
+    if (!isLight) return src;
+    src = src.replace(/%%\{init[\s\S]*?\}%%[ \t\r\n]*/g, '');
+    src = src.replace(/classDef\s+(\w+)\s+.+/g, (m, name) => {
+      const s = CLASSDEFS_LIGHT[name];
+      return s ? `classDef ${name} ${s}` : m;
+    });
+    return src;
+  }
+
+  async function rerenderMermaid() {
+    const isLight = getTheme() === 'light';
+    mermaid.initialize(isLight ? MERMAID_CFG.light : MERMAID_CFG.dark);
+    document.querySelectorAll('.mermaid').forEach(el => {
+      el.removeAttribute('data-processed');
+      el.textContent = getMermaidSrc(el, isLight);
+    });
+    await mermaid.run({ querySelector: '.mermaid' });
+  }
+
+  // ── Initial build ─────────────────────────────────────────────
+  buildGlobalShareChart();
+  buildNAShareChart();
+  buildUSChart();
+  buildIntlChart();
+  buildSegmentIntensityChart();
+  buildRegionalFootprintMergedChart();
+  buildCapabilityGapChart();
+  buildCapabilityGapUSChart();
+
+  // Capture Mermaid sources then do initial render
+  document.querySelectorAll('.mermaid').forEach(el => {
+    el.dataset.src = el.textContent.trim();
+  });
+  rerenderMermaid();
+
+  // ── World Map (D3 v7 + TopoJSON) ──────────────────────────────
+  (function () {
+    'use strict';
+
+    // ── Country ISO-numeric → region key ──────────────────────
+    const R = {};
+    // North America
+    [840, 124].forEach(id => R[id] = 'na');
+    // Latin America (incl. Mexico, Caribbean, Central + South America)
+    [484, 76, 32, 170, 152, 604, 862, 858, 320, 332, 340, 214, 218, 68, 600,
+     630, 388, 192, 328, 740, 222, 558, 591, 44, 796, 52, 308, 780, 28, 212,
+     662, 670, 659, 474, 388, 500, 663].forEach(id => R[id] = 'latam');
+    // Nordic (Finland, Sweden, Norway, Denmark, Iceland)
+    [246, 752, 578, 208, 352].forEach(id => R[id] = 'nordic');
+    // UK + Ireland
+    [826, 372].forEach(id => R[id] = 'uk');
+    // EU Continental (incl. Baltic, Balkans, Eastern Europe, Caucasus)
+    [276, 250, 56, 528, 756, 40, 380, 724, 620, 616, 203, 348, 642, 300,
+     703, 705, 191, 100, 233, 428, 440, 804, 498, 807, 8, 688, 499, 112,
+     31, 51, 268, 398, 496, 417, 762, 860, 792].forEach(id => R[id] = 'eu');
+    // Asia-Pacific
+    [36, 554, 392, 410, 156, 356, 702, 458, 764, 360, 608, 704, 116, 104,
+     50, 144, 524, 418, 496, 4, 626, 90, 242, 598, 548, 36].forEach(id => R[id] = 'apac');
+    // MEA — Middle East
+    [682, 784, 376, 400, 422, 364, 368, 760, 887, 512, 634, 414, 48,
+     275, 586, 524].forEach(id => R[id] = 'mea');
+    // MEA — Africa
+    [710, 566, 404, 818, 504, 788, 12, 231, 800, 834, 178, 288, 24, 508,
+     686, 204, 694, 466, 854, 562, 120, 140, 894, 716, 454, 646, 108, 232,
+     736, 728, 426, 748, 516, 72, 450, 480, 706, 262, 174, 174, 72].forEach(id => R[id] = 'mea');
+
+    // ── Intensity values: 0=none 1=vlow 2=low 3=med 4=high 5=vhigh ──
+    const INTENSITY = {
+      b2b: { na: 5, nordic: 5, uk: 2, eu: 1, apac: 2, latam: 0, mea: 1 },
+      b2c: { na: 5, nordic: 0, uk: 3, eu: 1, apac: 3, latam: 1, mea: 1 },
+    };
+
+    const MAP_TITLES = {
+      b2b: 'Global Reach of the B2B Institutional Model — Nordic Proven, North America Open',
+      b2c: 'B2C Consumer — Competitive Intensity by Region',
+    };
+    const MAP_DESCS = {
+      b2b: 'North America and EU Nordic are both VERY HIGH intensity — but for different reasons. Nordic is locked by Evondos after a decade of platform, service, and EHR integration. North America has 17 B2B-involved players, the same count as its B2C market, but none has built a platform or EHR layer. Same intensity, very different maturity. That gap is the opening.',
+      b2c: 'North America is the most crowded B2C market — 17 players including MedMinder (17% global pill-box share), Hero Health, EllieGrid, iRx Reminder, Addinex, and Loba Wellness. EU UK has 3–4 players. B2C entry is structurally blocked from RTM billing regardless of product quality.',
+    };
+
+    // ── Company headquarters data ──────────────────────────────
+    const B2B = [
+      { name: 'Evondos',     lon: 25.7,   lat: 60.2,  seg: 'B2B SNF / Home Care',        type: 'Full-Stack ★' },
+      { name: 'MedMinder',   lon: -71.1,  lat: 42.3,  seg: 'B2B Institutional (growing)', type: 'Platform' },
+      { name: 'Hero Health',  lon: -74.1,  lat: 40.5,  seg: 'B2B Provider / RPM',          type: 'HW + Service' },
+      { name: 'Tenovi',       lon: -77.0,  lat: 38.9,  seg: 'B2B Hospital / RPM',           type: 'Platform' },
+      { name: 'AdhereTech',   lon: -73.7,  lat: 40.9,  seg: 'B2B Pharma / Clinical',        type: 'Platform' },
+      { name: 'PatchRx',      lon: -86.8,  lat: 36.2,  seg: 'B2B Pharmacy',                 type: 'SW Only' },
+      { name: 'Dose Health',  lon: -93.1,  lat: 44.9,  seg: 'B2B Home Care / SNF',          type: 'HW + Service' },
+      { name: 'MOBI USA',     lon: -122.1, lat: 37.5,  seg: 'B2B SNF',                      type: 'HW + App' },
+      { name: 'Karie Health', lon: -79.7,  lat: 43.5,  seg: 'B2B SNF / ALF',                type: 'HW + Service' },
+      { name: 'Medipense',    lon: -73.6,  lat: 45.5,  seg: 'B2B LTC / Veterans',            type: 'Platform' },
+      { name: 'Pivotell',     lon: 0.1,    lat: 52.0,  seg: 'B2B UK Social Care',            type: 'HW + App' },
+      { name: 'Pharmacell',   lon: 0.7,    lat: 51.5,  seg: 'B2B UK Social Care',            type: 'HW + App' },
+      { name: 'Pill Connect', lon: -0.1,   lat: 51.6,  seg: 'B2B Clinical Trials',           type: 'Platform' },
+      { name: 'AARDEX',       lon: 4.4,    lat: 50.8,  seg: 'B2B Pharma / Clinical',         type: 'Platform' },
+      { name: 'Wisepill',     lon: 18.4,   lat: -33.9, seg: 'B2B NGO / Global Health',       type: 'Platform' },
+      { name: 'PillDrill',    lon: -122.0, lat: 37.3,  seg: 'B2B Medicare / RPM',            type: 'HW + App' },
+      { name: 'MedReady',     lon: -76.9,  lat: 39.0,  seg: 'B2B Home Care',                 type: 'HW + App' },
+      { name: 'Centor',       lon: -86.9,  lat: 32.4,  seg: 'B2B Pharma / Pharmacy',         type: 'HW' },
+      { name: 'Spencer Health', lon: -77.4, lat: 39.0, seg: 'B2B Home Care / SNF',           type: 'HW + Platform' },
+    ];
+
+    const B2C = [
+      { name: 'MedMinder',   lon: -71.1,  lat: 42.3,  seg: 'B2C Consumer', type: 'Platform' },
+      { name: 'Hero Health',  lon: -74.1,  lat: 40.5,  seg: 'B2C Consumer', type: 'HW + Service' },
+      { name: 'Pharm Adva',   lon: -77.6,  lat: 43.2,  seg: 'B2C Consumer', type: 'HW + App' },
+      { name: 'PharmRight',   lon: -79.9,  lat: 32.8,  seg: 'B2C Consumer', type: 'HW + Service' },
+      { name: 'Dose Health',  lon: -93.1,  lat: 44.9,  seg: 'B2C Consumer', type: 'HW + Service' },
+      { name: 'PillDrill',    lon: -122.0, lat: 37.3,  seg: 'B2C Consumer', type: 'HW + App' },
+      { name: 'e-Pill',       lon: -71.4,  lat: 42.2,  seg: 'B2C Consumer', type: 'HW catalog' },
+      { name: 'LiveFine',     lon: -74.5,  lat: 40.7,  seg: 'B2C Consumer', type: 'HW catalog' },
+      { name: 'MOBI USA',     lon: -122.1, lat: 37.5,  seg: 'B2C Consumer', type: 'HW + App' },
+      { name: 'Karie Health', lon: -79.7,  lat: 43.5,  seg: 'B2C Consumer', type: 'HW + Service' },
+      { name: 'MedReady',     lon: -76.9,  lat: 39.0,  seg: 'B2C Consumer', type: 'HW + App' },
+      { name: 'DeepSea',      lon: -122.8, lat: 49.0,  seg: 'B2C Consumer', type: 'HW + App' },
+      { name: 'Tabtime',      lon: -2.1,   lat: 53.2,  seg: 'B2C Consumer', type: 'HW catalog' },
+      { name: 'Pivotell',     lon: 0.1,    lat: 52.0,  seg: 'B2C (partial)',        type: 'HW + App' },
+      { name: 'Pharmacell',   lon: 0.7,    lat: 51.5,  seg: 'B2C (partial)',        type: 'HW + App' },
+      { name: 'EllieGrid',    lon: -74.0,  lat: 40.7,  seg: 'B2C Consumer',         type: 'HW + App' },
+      { name: 'iRx Reminder', lon: -71.1,  lat: 42.4,  seg: 'B2C Consumer',         type: 'HW + App' },
+      { name: 'Addinex',      lon: -87.6,  lat: 41.8,  seg: 'B2C Consumer',         type: 'HW + App' },
+      { name: 'Loba Wellness', lon: -122.3, lat: 47.6, seg: 'B2C Consumer (paused)', type: 'HW + App' },
+    ];
+
+    let mode = 'b2b';
+    let topo  = null;
+
+    const W = 960, H = 500; // internal SVG coordinate space (viewBox)
+
+    function intensityFill(regionKey, m, isLight) {
+      const v = INTENSITY[m][regionKey] ?? 0;
+      if (v === 0) return isLight ? '#e4eaf0' : '#1a1f25';
+      const dk = ['','rgba(63,185,80,.22)','rgba(63,185,80,.42)','rgba(227,179,65,.54)','rgba(255,123,114,.60)','rgba(255,123,114,.84)'];
+      const lt = ['','rgba(63,185,80,.22)','rgba(63,185,80,.42)','rgba(227,179,65,.44)','rgba(255,123,114,.44)','rgba(255,123,114,.70)'];
+      return (isLight ? lt : dk)[v];
+    }
+
+    function buildMap() {
+      if (!topo) return;
+      const isLight = getTheme() === 'light';
+      const container = document.getElementById('world-map-svg');
+      container.innerHTML = '';
+
+      const projection = d3.geoNaturalEarth1().scale(W / 6.5).translate([W / 2, H / 2]);
+      const path = d3.geoPath().projection(projection);
+      const countries = topojson.feature(topo, topo.objects.countries);
+
+      // Tooltip (added first so SVG overlaps it — SVG has no z-index issues here)
+      const tooltip = d3.select(container)
+        .append('div')
+        .attr('class', 'map-tooltip')
+        .style('position', 'absolute')
+        .style('opacity', 0);
+
+      // SVG — viewBox scales with container, no resize handlers needed
+      const svg = d3.select(container)
+        .append('svg')
+        .attr('viewBox', `0 0 ${W} ${H}`)
+        .attr('width', '100%')
+        .attr('height', '100%')
+        .attr('preserveAspectRatio', 'xMidYMid meet')
+        .style('display', 'block');
+
+      // Ocean
+      svg.append('rect').attr('width', W).attr('height', H)
+        .attr('fill', isLight ? '#d0e4f2' : '#080d14');
+
+      // Graticule grid
+      svg.append('path')
+        .datum(d3.geoGraticule()())
+        .attr('d', path)
+        .attr('fill', 'none')
+        .attr('stroke', isLight ? 'rgba(0,0,0,.07)' : 'rgba(255,255,255,.05)')
+        .attr('stroke-width', 0.4);
+
+      // Countries (choropleth fill)
+      svg.append('g').selectAll('path')
+        .data(countries.features)
+        .join('path')
+        .attr('d', path)
+        .attr('fill', d => intensityFill(R[+d.id], mode, isLight))
+        .attr('stroke', isLight ? '#b8c4ce' : '#21262d')
+        .attr('stroke-width', 0.4);
+
+      // Interior border mesh (slightly stronger line)
+      svg.append('path')
+        .datum(topojson.mesh(topo, topo.objects.countries, (a, b) => a !== b))
+        .attr('d', path).attr('fill', 'none')
+        .attr('stroke', isLight ? '#99a8b4' : '#30363d')
+        .attr('stroke-width', 0.3);
+
+      // Company markers
+      const companies = mode === 'b2b' ? B2B : B2C;
+      const mFill   = mode === 'b2b' ? 'rgba(63,185,80,.88)'  : 'rgba(227,179,65,.88)';
+      const mStroke = mode === 'b2b' ? '#3fb950'               : '#e3b341';
+
+      svg.append('g').selectAll('circle')
+        .data(companies)
+        .join('circle')
+        .attr('cx', d => { const p = projection([d.lon, d.lat]); return p ? p[0] : -999; })
+        .attr('cy', d => { const p = projection([d.lon, d.lat]); return p ? p[1] : -999; })
+        .attr('r', 4.5)
+        .attr('fill', mFill)
+        .attr('stroke', mStroke)
+        .attr('stroke-width', 1.5)
+        .style('cursor', 'pointer')
+        .on('mouseover', function (event, d) {
+          d3.select(this).attr('r', 6.5);
+          tooltip.style('opacity', 1)
+            .html(`<strong>${d.name}</strong><br>${d.seg}<br><span style="opacity:.72">${d.type}${d.note ? '  ·  ' + d.note : ''}</span>`);
+        })
+        .on('mousemove', function (event) {
+          const rect = container.getBoundingClientRect();
+          tooltip.style('left', (event.clientX - rect.left + 14) + 'px')
+                 .style('top',  (event.clientY - rect.top  - 40) + 'px');
+        })
+        .on('mouseout', function () {
+          d3.select(this).attr('r', 4.5);
+          tooltip.style('opacity', 0);
+        });
+    }
+
+    function switchMode(m) {
+      mode = m;
+      document.getElementById('btn-b2b').classList.toggle('map-btn-active', m === 'b2b');
+      document.getElementById('btn-b2c').classList.toggle('map-btn-active', m === 'b2c');
+      document.getElementById('map-title').textContent = MAP_TITLES[m];
+      document.getElementById('map-desc').textContent  = MAP_DESCS[m];
+      // Update legend marker colour
+      const mk = document.getElementById('legend-marker').querySelector('span');
+      if (mk) { const c = m === 'b2b' ? '#3fb950' : '#e3b341'; mk.style.background = c; mk.style.borderColor = c; }
+      buildMap();
+    }
+
+    document.getElementById('btn-b2b').addEventListener('click', () => switchMode('b2b'));
+    document.getElementById('btn-b2c').addEventListener('click', () => switchMode('b2c'));
+
+    // Expose for theme toggle (called from toggleTheme())
+    window._rerenderMap = buildMap;
+
+    // Fetch world topology once, then render
+    d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+      .then(data => { topo = data; buildMap(); })
+      .catch(() => {
+        document.getElementById('world-map-svg').innerHTML =
+          '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:12px">Map unavailable — check network connection</div>';
+      });
+  })();
+
+</script>
+</body>
+</html>
